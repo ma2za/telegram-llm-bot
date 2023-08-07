@@ -1,10 +1,15 @@
 import json
+import logging
 import os
 
 import requests
 import telebot
 import yaml
 from dotenv import load_dotenv
+
+logging.basicConfig(filename='bot.log', level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -79,4 +84,7 @@ def conversation(message):
     bot.reply_to(message, response)
 
 
-bot.infinity_polling()
+try:
+    bot.infinity_polling()
+except Exception as err:
+    logger.error(err)
