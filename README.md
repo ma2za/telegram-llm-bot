@@ -60,4 +60,50 @@ not a big problem:
 git clone https://github.com/ma2za/telegram-llm-guru.git
 ```
 
+Move to the bot directory
 
+```shell
+cd telegram-llm-guru/src/bot
+```
+
+Create a virtual environment
+
+```shell
+python3 -m venv venv
+```
+
+Activate environment
+
+```shell
+source venv/bin/activate
+```
+Install bot requirements
+
+```shell
+pip install -r requirements.txt
+```
+
+Create a .env file to set the environment variables
+
+```shell
+touch .env
+```
+
+Via nano modify the content of the .env with the following content.
+**TELEGRAM_BOT_TOKEN** is the token we received earlier from the BotFather.
+Later we will also receive a Beam Token, which we will assign to **BEAM_TOKEN** and URL (**BEAM_URL**), 
+so for now we only set the telegram token:
+
+```shell
+TELEGRAM_BOT_TOKEN=
+```
+
+We can finally launch our bot:
+
+```shell
+python3 bot.py &
+```
+
+We are done here, we can finally close the shell.
+
+### 3) LLM inference on Beam

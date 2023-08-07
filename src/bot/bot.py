@@ -31,7 +31,8 @@ def chat(payload):
                                 data=json.dumps(payload),
                                 timeout=1000
                                 )
-    return response.json().get('message').get("text")
+    out = response.json().get('message')
+    return out.get("text") if isinstance(out, dict) else out
 
 
 @bot.message_handler(commands=['record'])
@@ -41,6 +42,9 @@ def record(message):
     command. You can replace them main system prompt, with a specific prompt.
     :param message:
     """
+    if os.getenv('BEAM_TOKEN') is None or os.getenv("BEAM_URL") is None:
+        bot.reply_to(message, "Beam environment variables not set!")
+        return
     payload = {
         "system": config.get("record"),
         "messages": messages
@@ -50,6 +54,9 @@ def record(message):
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
+    if os.getenv('BEAM_TOKEN') is None or os.getenv("BEAM_URL") is None:
+        bot.reply_to(message, "Beam environment variables not set!")
+        return
     payload = {
         "system": SYSTEM,
         "messages": [config.get("start")]
@@ -59,6 +66,9 @@ def send_welcome(message):
 
 @bot.message_handler(func=lambda msg: True)
 def conversation(message):
+    if os.getenv('BEAM_TOKEN') is None or os.getenv("BEAM_URL") is None:
+        bot.reply_to(message, "Beam environment variables not set!")
+        return
     messages.append(message.text)
     payload = {
         "system": SYSTEM,
