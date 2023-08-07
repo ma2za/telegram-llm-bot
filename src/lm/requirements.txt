@@ -1,0 +1,8 @@
+torch
+transformers
+gmpy2
+bitsandbytes
+accelerate
+scipy
+xformers
+langchain
