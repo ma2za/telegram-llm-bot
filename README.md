@@ -1,8 +1,4 @@
-# Free (for the first 10 hours of compute 🙇🏼‍♂️) Telegram Llm ChatBot
-
-<img src="https://drive.google.com/uc?export=view&id=130x9x3F9KIn9Ki7d4Yc_SJk73vldaIMj" width="300">
-
-## Quickstart
+# Free Telegram Llm ChatBot (for the first 10 hours of compute 🙇🏼‍♂️)
 
 This is a guide on how to build a Telegram Bot backed by
 an LLM (i.e. llama2-chat, llama2-chat-32k, vicuna). The bot is
@@ -11,6 +7,10 @@ Beam Cloud as a serverless REST API, which is free for the first
 10 hours of compute. The whole thing is quite slow, but this is just
 a starting point. This was hacked together in just a few. Advices and feedback
 are really appreciated.
+
+<img src="https://drive.google.com/uc?export=view&id=130x9x3F9KIn9Ki7d4Yc_SJk73vldaIMj" width="300">
+
+## Quickstart
 
 ### 1) Create a Telegram Bot
 
