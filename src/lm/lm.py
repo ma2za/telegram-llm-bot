@@ -12,17 +12,19 @@ from transformers import StoppingCriteria, StoppingCriteriaList, BitsAndBytesCon
 
 HF_CACHE = "./models"
 MODEL_ID = 'meta-llama/Llama-2-7b-chat-hf'
-# MODEL_ID = "togethercomputer/LLaMA-2-7B-32K"
+APP_NAME = "travel-guru"
+GPU = "T4"
+MEMORY = "2Gi"
 
-app = App(name="dr-llama",
+app = App(name=APP_NAME,
           volumes=[
               Volume(
                   name="my_models",
                   path=HF_CACHE,
               )
           ],
-          runtime=Runtime(gpu="T4",
-                          memory="2Gi",
+          runtime=Runtime(gpu=GPU,
+                          memory=MEMORY,
                           image=Image(python_packages="requirements.txt")))
 
 
