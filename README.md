@@ -97,7 +97,7 @@ touch .env
 
 Via nano modify the content of the .env with the following content.
 **TELEGRAM_BOT_TOKEN** is the token we received earlier from the BotFather.
-Later we will also receive a Beam Token, which we will assign to **BEAM_TOKEN** and URL (**BEAM_URL**),
+Later we will also receive a Beam Token, which we will assign to **BEAM_TOKEN** and URL (**LM_URL**),
 so for now we only set the telegram token:
 
 ```shell
@@ -179,13 +179,13 @@ beam deploy lm.py
 
 The app should be up and running now. Go to the Beam Dashboard
 and under the Apps tab you can find your app.
-Last thing to do is to set the **BEAM_URL** variable in the
+Last thing to do is to set the **LM_URL** variable in the
 .env in the EC2 instance with the url of your app. From
 the overview of the app you can click on Call API and
 there you can easily find out the url
 
 ```shell
-BEAM_URL = https://apps.beam.cloud/{something}
+LM_URL = https://apps.beam.cloud/{something}
 ```
 
 You are ready to chat! 🚀🚀🚀🚀🚀

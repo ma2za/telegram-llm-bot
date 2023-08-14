@@ -31,4 +31,4 @@ def chat(**inputs):
         frequency_penalty=0,
         presence_penalty=0,
         stop=None)
-    return response.get("choices")[0].get("message").to_dict().get("content")
+    return {"message": response.get("choices")[0].get("message").to_dict().get("content")}
