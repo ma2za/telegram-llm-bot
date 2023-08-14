@@ -31,7 +31,7 @@ def chat(payload):
         "Content-Type": "application/json"
     }
 
-    response = requests.request("POST", os.getenv("BEAM_URL"),
+    response = requests.request("POST", os.getenv("LM_URL"),
                                 headers=headers,
                                 data=json.dumps(payload),
                                 timeout=1000
@@ -47,7 +47,7 @@ def record(message):
     command. You can replace them main system prompt, with a specific prompt.
     :param message:
     """
-    if os.getenv('BEAM_TOKEN') is None or os.getenv("BEAM_URL") is None:
+    if os.getenv('BEAM_TOKEN') is None or os.getenv("LM_URL") is None:
         bot.reply_to(message, "Beam environment variables not set!")
         return
     payload = {
@@ -59,7 +59,7 @@ def record(message):
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    if os.getenv('BEAM_TOKEN') is None or os.getenv("BEAM_URL") is None:
+    if os.getenv('BEAM_TOKEN') is None or os.getenv("LM_URL") is None:
         bot.reply_to(message, "Beam environment variables not set!")
         return
     payload = {
@@ -71,7 +71,7 @@ def send_welcome(message):
 
 @bot.message_handler(func=lambda msg: True)
 def conversation(message):
-    if os.getenv('BEAM_TOKEN') is None or os.getenv("BEAM_URL") is None:
+    if os.getenv('BEAM_TOKEN') is None or os.getenv("LM_URL") is None:
         bot.reply_to(message, "Beam environment variables not set!")
         return
     messages.append(message.text)

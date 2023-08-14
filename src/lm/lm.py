@@ -11,10 +11,7 @@ from transformers import StoppingCriteria, StoppingCriteriaList, BitsAndBytesCon
     AutoModelForCausalLM
 
 HF_CACHE = "./models"
-MODEL_ID = 'meta-llama/Llama-2-7b-chat-hf'
 APP_NAME = "travel-guru"
-GPU = "T4"
-MEMORY = "2Gi"
 
 app = App(name=APP_NAME,
           volumes=[
@@ -23,8 +20,8 @@ app = App(name=APP_NAME,
                   path=HF_CACHE,
               )
           ],
-          runtime=Runtime(gpu=GPU,
-                          memory=MEMORY,
+          runtime=Runtime(gpu=os.getenv("GPU"),
+                          memory=os.getenv("MEMORY"),
                           image=Image(python_packages="requirements.txt")))
 
 
@@ -38,13 +35,13 @@ def chat(**inputs):
     )
 
     model_config = AutoConfig.from_pretrained(
-        MODEL_ID,
+        os.getenv("MODEL_ID"),
         use_auth_token=os.getenv("HF_TOKEN"),
         cache_dir=HF_CACHE
     )
 
     model = AutoModelForCausalLM.from_pretrained(
-        MODEL_ID,
+        os.getenv("MODEL_ID"),
         trust_remote_code=True,
         config=model_config,
         quantization_config=bnb_config,
@@ -54,7 +51,7 @@ def chat(**inputs):
     )
 
     tokenizer = AutoTokenizer.from_pretrained(
-        MODEL_ID,
+        os.getenv("MODEL_ID"),
         use_auth_token=os.getenv("HF_TOKEN"),
         cache_dir=HF_CACHE,
     )
