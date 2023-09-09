@@ -107,7 +107,7 @@ TELEGRAM_BOT_TOKEN=
 We can finally launch our bot:
 
 ```shell
-python3 bot.py &
+python3 main.py &
 ```
 
 We are done here, we can finally close the shell.
@@ -154,7 +154,7 @@ Then you can do everything locally. Move to the
 lm subdirectory.
 
 ```shell
-cd ./src/lm
+cd ./src/telegram_llm_guru/lm_api/
 ```
 
 Follow the Beam installation guide [Beam Installation](https://docs.beam.cloud/getting-started/installation).
@@ -174,7 +174,7 @@ MEMORY = "2Gi"
 You are ready to deploy the app:
 
 ```shell
-beam deploy lm.py 
+beam deploy app.py
 ```
 
 The app should be up and running now. Go to the Beam Dashboard

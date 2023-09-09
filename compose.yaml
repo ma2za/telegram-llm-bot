@@ -1,0 +1,22 @@
+services:
+  travel-guru-mongo:
+    image: mongo:latest
+    container_name: travel-guru-mongo
+    ports:
+      - '27017:27017'
+    volumes:
+      - dbdata6:/data/db
+  travel-guru-bot:
+    env_file: .env
+    command: poetry run python3 /app/src/telegram_llm_guru/main.py
+    volumes:
+      - type: bind
+        source: src/telegram_llm_guru/logs
+        target: /app/src/telegram_llm_guru/logs
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: travel-guru-bot
+    restart: "no"
+volumes:
+  dbdata6:

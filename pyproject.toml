@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "telegram-llm-guru"
+version = "0.1.0"
+description = ""
+authors = ["ma2za <mazzapaolo2019@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "telegram_llm_guru", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+python-telegram-bot = "^20.5"
+python-dotenv = "^1.0.0"
+pymongo = "^4.5.0"
+
+
+[tool.poetry.group.dev.dependencies]
+requests = "^2.31.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
