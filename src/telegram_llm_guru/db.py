@@ -1,12 +1,11 @@
 import os
 
-from pymongo import MongoClient
+from motor.motor_asyncio import AsyncIOMotorClient
 
 
-# TODO maybe switch to motor for async mongo
 class MongoDBManager:
     def __init__(self, host, port):
-        self.client = MongoClient(host, port)
+        self.client = AsyncIOMotorClient(host=host, port=port)
 
     def get_database(self, db_name):
         return self.client[db_name]

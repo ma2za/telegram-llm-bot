@@ -34,7 +34,7 @@ WORKDIR /app
 
 COPY pyproject.toml poetry.lock README.md ./
 
-RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --with bot --no-root
+RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root
 
 COPY . ./
 WORKDIR /app/src/telegram_llm_guru/

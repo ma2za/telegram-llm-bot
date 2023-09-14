@@ -42,11 +42,11 @@ async def chat(payload):
 
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    db = mongodb_manager.get_database("travel-gurus")
+    collection = db["guru"]
+    msg_reply = "😿"
     try:
-        db = mongodb_manager.get_database("travel-gurus")
-        collection = db["guru"]
-
-        result = collection.find_one({"telegram_id": update.message.from_user.id})
+        result = await collection.find_one({"telegram_id": update.message.from_user.id})
         if result is None:
             messages = []
             with open("scripts/config.yml", "r") as stream:
@@ -56,21 +56,20 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             messages = result.get("messages", [])
             new_messages = [update.message.text]
-        payload = {"messages": messages + new_messages}
-        response = await chat(payload)
+        response = await chat({"messages": messages + new_messages})
         new_messages += [response]
-        collection.update_one(
+        await collection.update_one(
             {"telegram_id": update.message.from_user.id},
             {"$push": {"messages": {"$each": new_messages}}},
             upsert=True,
         )
-
-        await context.bot.send_message(
-            chat_id=update.effective_chat.id,
-            text=response,
-            reply_to_message_id=update.message.id,
-        )
-    except Exception as ex:
-        print()
+        msg_reply = response
+    except Exception:
+        msg_reply = "😿"
     finally:
         context.user_data[update.update_id] = "Done"
+        await context.bot.send_message(
+            chat_id=update.effective_chat.id,
+            text=msg_reply,
+            reply_to_message_id=update.message.id,
+        )

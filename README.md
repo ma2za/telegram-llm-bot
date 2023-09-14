@@ -36,7 +36,66 @@ Here I will give you the main steps:
 You can now start a conversation with your bot
 by searching for the username on Telegram.
 
-### 2) Host the Telegram bot
+### 2) LLM inference on Beam
+
+As for hosting the llm inference the best option I found for now
+is [Beam Cloud](https://www.beam.cloud/). Their compute prices are among the cheapest and
+they offer 10 hours of free compute with nice GPUs. The offer free
+storage, which is highly appreciated.
+
+The chatbot is built using langchain and huggingface. So if you want
+to the [Llama 2](https://huggingface.co/meta-llama/Llama-2-7b-chat) family of models you will need to require access to
+the models.
+It is very easy to do and they are really quick at approving the request.
+
+TODO I used a couple of sources to put together langchain and HF,
+I will add them ASAP.
+
+If you want to use gated models you will need to set an hugging face token.
+This is built in the code, I will fix it in the next days.
+
+This is a guide to generate the token:
+
+[HuggingFace User access tokens
+](https://huggingface.co/docs/hub/security-tokens)
+
+Once you have created your account, no payment method required,
+go to the dashboard and under the Settings tab on the right
+menu you can find the Secrets.
+If you are using a model like llama 2 that requires an hugging face
+token then you need to set the **HF_TOKEN** variable with the hugging face token.
+
+Then you can do everything locally. Move to the
+lm subdirectory.
+
+```shell
+cd ./src/telegram_llm_guru/lm_api/
+```
+
+Follow the Beam installation guide [Beam Installation](https://docs.beam.cloud/getting-started/installation).
+
+Inside the app.py file you can modify the following
+variables or leave them as they are. I will soon move them
+to a configuration file:
+
+```python
+HF_CACHE = "./models"
+MODEL_ID = "meta-llama/Llama-2-7b-chat-hf"
+APP_NAME = "travel-guru"
+GPU = "T4"
+MEMORY = "16Gi"
+```
+
+You are ready to deploy the app:
+
+```shell
+beam deploy app.py
+```
+
+The app should be up and running now. Go to the Beam Dashboard
+and under the Apps tab you can find your app.
+
+### 3) Host the Telegram bot
 
 You can host your bot for free on a free tier EC2 instance. This is
 a guide you can follow:
@@ -68,25 +127,7 @@ git clone https://github.com/ma2za/telegram-llm-guru.git
 Move to the bot directory
 
 ```shell
-cd telegram-llm-guru/src/bot
-```
-
-Create a virtual environment
-
-```shell
-python3 -m venv venv
-```
-
-Activate environment
-
-```shell
-source venv/bin/activate
-```
-
-Install bot requirements
-
-```shell
-pip install -r requirements.txt
+cd telegram-llm-guru
 ```
 
 Create a .env file to set the environment variables
@@ -96,97 +137,38 @@ touch .env
 ```
 
 Via nano modify the content of the .env with the following content.
+
+```shell
+TELEGRAM_BOT_TOKEN =
+BEAM_TOKEN =
+BEAM_URL = https://apps.beam.cloud/{something}
+MONGO_HOST=localhost
+```
+
 **TELEGRAM_BOT_TOKEN** is the token we received earlier from the BotFather.
-Later we will also receive a Beam Token, which we will assign to **BEAM_TOKEN** and URL (**LM_URL**),
-so for now we only set the telegram token:
+
+**BEAM_TOKEN**: under **API Keys** in the Beam app dashboard
+you can generate a Beam token.
+
+**BEAM_URL** is obtained from the overview of the app
+where you can click on Call API and there you can easily find out the url
+
+We can finally use docker compose to build images and run the containers.
+
+Install Docker and Docker compose. Here is the official guide:
+
+[Install Docker Engine on Ubuntu
+](https://docs.docker.com/engine/install/ubuntu/)
+
+Build, create and start the containers:
 
 ```shell
-TELEGRAM_BOT_TOKEN=
+sudo docker compose --build -d
 ```
 
-We can finally launch our bot:
+We are done here!
 
-```shell
-python3 main.py &
-```
-
-We are done here, we can finally close the shell.
-
-The bot.py is easy to modify. The system prompts are contained
-in **config.yml**. These are the two files to modify
-to personalize the chatbot.
-
-### 3) LLM inference on Beam
-
-As for hosting the llm inference the best option I found for now
-is [Beam Cloud](https://www.beam.cloud/). Their compute prices are among the cheapest and
-they offer 10 hours of free compute with nice GPUs. The offer free
-storage, which is highly appreciated.
-
-The chatbot is built using langchain and huggingface. So if you want
-to the [Llama 2](https://huggingface.co/meta-llama/Llama-2-7b-chat) family of models you will need to require access to
-the models.
-It is very easy to do and they are really quick at approving the request.
-
-TODO I used a couple of sources to put together langchain and HF,
-I will add them ASAP.
-
-If you want to use gated models you will need to set an hugging face token.
-This is built in the code, I will fix it in the next days.
-
-This is a guide to generate the token:
-
-[HuggingFace User access tokens
-](https://huggingface.co/docs/hub/security-tokens)
-
-Once you have created your account, no payment method required,
-go to the dashboard and under the Settings tab on the right
-menu you can find the Secrets.
-Here you need to set the **HF_TOKEN** variable with the hugging face token.
-Then under **API Keys** you can generate a Beam token and add it to
-the .env inside the EC2 instance
-
-```shell
-BEAM_TOKEN=
-```
-
-Then you can do everything locally. Move to the
-lm subdirectory.
-
-```shell
-cd ./src/telegram_llm_guru/lm_api/
-```
-
-Follow the Beam installation guide [Beam Installation](https://docs.beam.cloud/getting-started/installation).
-
-Inside the lm.py file you can modify the following
-variables or leave them as they are. I will soon move them
-to a configuration file:
-
-```python
-HF_CACHE = "./models"
-MODEL_ID = 'meta-llama/Llama-2-7b-chat-hf'
-APP_NAME = "travel-guru"
-GPU = "T4"
-MEMORY = "2Gi"
-```
-
-You are ready to deploy the app:
-
-```shell
-beam deploy app.py
-```
-
-The app should be up and running now. Go to the Beam Dashboard
-and under the Apps tab you can find your app.
-Last thing to do is to set the **LM_URL** variable in the
-.env in the EC2 instance with the url of your app. From
-the overview of the app you can click on Call API and
-there you can easily find out the url
-
-```shell
-LM_URL = https://apps.beam.cloud/{something}
-```
+The system prompts are contained in **config.yml**.
 
 You are ready to chat! 🚀🚀🚀🚀🚀
 
