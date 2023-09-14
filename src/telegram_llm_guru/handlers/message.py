@@ -1,7 +1,6 @@
-import json
 import os
 
-import requests
+import httpx
 import yaml
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -10,33 +9,21 @@ from telegram_llm_guru.db import mongodb_manager
 
 
 async def chat(payload):
-    headers = {
-        "Accept": "*/*",
-        "Accept-Encoding": "gzip, deflate",
-        "Authorization": f"Basic {os.getenv('BEAM_TOKEN')}",
-        "Connection": "keep-alive",
-        "Content-Type": "application/json",
-    }
-
-    response = requests.request(
-        "POST",
-        os.getenv("BEAM_URL"),
-        headers=headers,
-        data=json.dumps(payload),
-        timeout=10000,
-    )
-
-    # TODO check httpx error 400 '{"Offset":1}'
-    # async with httpx.AsyncClient() as client:
-    #     response = await client.request(
-    #         "POST",
-    #         os.getenv("BEAM_URL"),
-    #         headers=headers,
-    #         data=payload,
-    #         timeout=10000,
-    #     )
-    if response.status_code != 200:
-        raise Exception
+    async with httpx.AsyncClient() as client:
+        response = await client.request(
+            "POST",
+            os.getenv("BEAM_URL"),
+            headers={
+                "Accept": "*/*",
+                "Accept-Encoding": "gzip, deflate",
+                "Authorization": f"Basic {os.getenv('BEAM_TOKEN')}",
+                "Connection": "keep-alive",
+                "Content-Type": "application/json",
+            },
+            json=payload,
+            timeout=10000,
+        )
+    response.raise_for_status()
     out = response.json().get("message")
     return out.get("text").strip() if isinstance(out, dict) else out
 

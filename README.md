@@ -5,18 +5,13 @@ an LLM (i.e. llama2-chat, llama2-chat-32k, vicuna). The bot is
 hosted on a free tier EC2 instance, the llm inference is hosted on
 Beam Cloud as a serverless REST API, which is free for the first
 10 hours of compute. The whole thing is quite slow, but this is just
-a starting point. This was hacked together in just a few. Advices and feedback
-are really appreciated.
+a starting point.
 
 <img src="https://drive.google.com/uc?export=view&id=130x9x3F9KIn9Ki7d4Yc_SJk73vldaIMj" width="300">
 
 ## Quickstart
 
 ### 1) Create a Telegram Bot
-
-I tried with PythonAnywhere, but you need to ask them to
-whitelist the Beam endpoints, which they will probably not
-allow.
 
 You can follow this guide to build a Python Telegram Bot:
 
@@ -163,7 +158,7 @@ Install Docker and Docker compose. Here is the official guide:
 Build, create and start the containers:
 
 ```shell
-sudo docker compose --build -d
+sudo docker compose up -d --build
 ```
 
 We are done here!
