@@ -39,7 +39,6 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             with open("scripts/config.yml", "r") as stream:
                 config = yaml.load(stream, Loader=yaml.Loader)
             new_messages = [config.get("system"), update.message.text]
-
         else:
             messages = result.get("messages", [])
             new_messages = [update.message.text]

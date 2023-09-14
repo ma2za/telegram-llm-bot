@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-from pathlib import Path
 
 from dotenv import load_dotenv
 from telegram import Update
@@ -34,8 +33,6 @@ def async_partial(op):
 
 
 def main() -> None:
-    Path(".tmp").mkdir(parents=True, exist_ok=True)
-
     app = Application.builder().token(os.getenv("TELEGRAM_BOT_TOKEN")).build()
 
     app.add_handlers(
