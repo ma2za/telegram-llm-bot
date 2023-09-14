@@ -14,4 +14,6 @@ class MongoDBManager:
         self.client.close()
 
 
-mongodb_manager = MongoDBManager(host=os.getenv("MONGO_HOST"), port=27017)
+mongodb_manager = MongoDBManager(
+    host=os.getenv("MONGO_HOST"), port=int(os.getenv("MONGO_PORT"))
+)

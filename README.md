@@ -138,6 +138,7 @@ TELEGRAM_BOT_TOKEN =
 BEAM_TOKEN =
 BEAM_URL = https://apps.beam.cloud/{something}
 MONGO_HOST=localhost
+MONGO_PORT=27017
 ```
 
 **TELEGRAM_BOT_TOKEN** is the token we received earlier from the BotFather.
