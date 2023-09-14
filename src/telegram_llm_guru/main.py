@@ -7,11 +7,11 @@ from telegram import Update
 from telegram.ext import Application, MessageHandler, filters
 from telegram.ext import ContextTypes
 
+load_dotenv()
+
 from handlers.message import handle_message
 from telegram_llm_guru.db import mongodb_manager
 from telegram_llm_guru.utils import typing_loop
-
-load_dotenv()
 
 # TODO logging
 

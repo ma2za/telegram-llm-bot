@@ -1,9 +1,13 @@
 services:
   travel-guru-mongo:
+    env_file: .env
     image: mongo:latest
     container_name: travel-guru-mongo
+    command: mongod --port ${MONGO_PORT}
+    expose:
+      - ${MONGO_PORT}
     ports:
-      - '27017:27017'
+      - ${MONGO_PORT}:${MONGO_PORT}
     volumes:
       - dbdata6:/data/db
   travel-guru-bot:

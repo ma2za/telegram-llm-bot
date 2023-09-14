@@ -64,7 +64,7 @@ Then you can do everything locally. Move to the
 lm subdirectory.
 
 ```shell
-cd ./src/telegram_llm_guru/lm_api/
+cd ./src/lm_api/
 ```
 
 Follow the Beam installation guide [Beam Installation](https://docs.beam.cloud/getting-started/installation).

@@ -50,7 +50,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             upsert=True,
         )
         msg_reply = response
-    except Exception:
+    except Exception as ex:
         msg_reply = "😿"
     finally:
         context.user_data[update.update_id] = "Done"
