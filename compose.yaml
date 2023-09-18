@@ -1,8 +1,8 @@
 services:
-  travel-guru-mongo:
+  smart-bots-mongo:
     env_file: .env
     image: mongo:latest
-    container_name: travel-guru-mongo
+    container_name: smart-bots-mongo
     command: mongod --port ${MONGO_PORT}
     expose:
       - ${MONGO_PORT}

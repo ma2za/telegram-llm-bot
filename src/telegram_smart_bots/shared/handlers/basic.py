@@ -1,10 +1,14 @@
+import importlib
 import logging
+import os
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from telegram_smart_bots.shared.services.basic import set_language
 from telegram_smart_bots.shared.utils import async_typing
+
+settings = importlib.import_module(os.getenv("SETTINGS_FILE"))
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +17,7 @@ logger = logging.getLogger(__name__)
 async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text="Hello!!! I am your personal voice journal! 😄",
+        text=settings.settings.start_message,
         reply_to_message_id=update.message.id,
     )
 

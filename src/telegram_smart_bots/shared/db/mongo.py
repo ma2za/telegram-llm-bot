@@ -19,9 +19,10 @@ class MongoDBManager:
     def close(self):
         self.client.close()
 
+    async def ping(self):
+        await self.client.admin.command("ping")
+
 
 mongodb_manager = MongoDBManager(
     host=os.getenv("MONGO_HOST"), port=int(os.getenv("MONGO_PORT"))
 )
-
-# mongodb_manager.get_database(os.getenv("DB_NAME")).command("ping")

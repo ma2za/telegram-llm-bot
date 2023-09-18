@@ -20,7 +20,7 @@ async def check_voice_limit(user_id: int, duration: int):
         {"telegram_id": user_id},
         {
             f"limits.{date.today()}.daily_seconds": 1,
-            "daily_voice_limit": 1,
+            "daily_audio_limit": 1,
         },
     )
     if result is None:
@@ -28,9 +28,9 @@ async def check_voice_limit(user_id: int, duration: int):
     daily_seconds = (
         result.get("limits", {}).get(f"{date.today()}", {}).get("daily_seconds", 0)
     )
-    daily_voice_limit = result.get("daily_voice_limit", 300)
+    daily_audio_limit = result.get("daily_audio_limit", 300)
     # TODO handle split audio
-    if daily_voice_limit - daily_seconds - duration < 0:
+    if daily_audio_limit - daily_seconds - duration < 0:
         raise Exception
 
 
@@ -96,7 +96,7 @@ async def transcribe_and_check(
                     Ensure that the content, style, and language remain unchanged,
                     but correct any errors to make it more readable and coherent.
                     Do not add preambles to the edited paragraph or quotes surrounding your responses. Just give
-                    me the edited text, without 'Edited:' at the beginning"""
+                    me the edited text, without 'Edited:' at the beginning."""
             ),
             HumanMessage(content=transcript),
         ]

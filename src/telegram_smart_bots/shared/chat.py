@@ -30,7 +30,7 @@ async def beam_chat(payload):
 
 
 async def azure_openai_chat(
-    messages: List[BaseMessage], temperature: float = 0.1
+    messages: List[BaseMessage], temperature: float = 0.0
 ) -> str:
     llm = AzureChatOpenAI(
         openai_api_type=os.getenv("AZURE_OPENAI_API_TYPE"),

@@ -16,6 +16,7 @@ langchain = "^0.0.292"
 openai = "^0.28.0"
 async-lru = "^2.0.4"
 mmh3 = "^4.0.1"
+pydantic-settings = "^2.0.3"
 
 
 [build-system]
