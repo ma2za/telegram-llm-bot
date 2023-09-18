@@ -36,5 +36,5 @@ COPY pyproject.toml poetry.lock README.md ./
 
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root
 
-COPY src/telegram_llm_guru/ ./src/telegram_llm_guru/
-WORKDIR /app/src/telegram_llm_guru/
+COPY src/telegram_smart_bots/ ./src/telegram_smart_bots/
+WORKDIR /app/src/telegram_smart_bots/

@@ -12,11 +12,11 @@ services:
       - dbdata6:/data/db
   travel-guru-bot:
     env_file: .env
-    command: poetry run python3 /app/src/telegram_llm_guru/main.py
+    command: poetry run python3 /app/src/telegram_smart_bots/app.py
     volumes:
       - type: bind
-        source: src/telegram_llm_guru/logs
-        target: /app/src/telegram_llm_guru/logs
+        source: src/telegram_smart_bots/logs
+        target: /app/src/telegram_smart_bots/logs
     build:
       context: .
       dockerfile: Dockerfile
