@@ -25,7 +25,7 @@ async def idea_chat(audio: bytes, user_id: int, duration: int) -> str:
         chat_history = MongoDBChatMessageHistory(
             os.getenv("DB_NAME"), user_id, session_name
         )
-        # await chat_history.clear()
+
         messages = await chat_history.messages
         new_messages = []
         if not messages:

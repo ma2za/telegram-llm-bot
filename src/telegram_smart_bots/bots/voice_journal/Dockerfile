@@ -34,7 +34,7 @@ WORKDIR /app
 
 COPY pyproject.toml poetry.lock README.md logging.conf ./
 
-RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root
+RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root --with voice_journal
 
 COPY src/telegram_smart_bots/ ./src/telegram_smart_bots/
 WORKDIR /app/src/telegram_smart_bots/

@@ -96,7 +96,7 @@ async def transcribe_and_check(
                     Ensure that the content, style, and language remain unchanged,
                     but correct any errors to make it more readable and coherent.
                     Do not add preambles to the edited paragraph or quotes surrounding your responses. Just give
-                    me the edited text, without 'Edited:' at the beginning."""
+                    me the edited text."""
             ),
             HumanMessage(content=transcript),
         ]

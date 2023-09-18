@@ -20,6 +20,10 @@ pydantic-settings = "^2.0.3"
 weaviate-client = "^3.24.1"
 
 
+[tool.poetry.group.voice_journal.dependencies]
+reportlab = "^4.0.4"
+geopy = "^2.4.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
