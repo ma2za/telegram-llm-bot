@@ -10,8 +10,10 @@ services:
       - ${MONGO_PORT}:${MONGO_PORT}
     volumes:
       - dbdata6:/data/db
-  travel-guru-bot:
-    env_file: .env
+  idea-sparring-bot:
+    env_file:
+      - .env
+      - src/telegram_smart_bots/bots/idea_sparring/.env
     command: poetry run python3 /app/src/telegram_smart_bots/app.py
     volumes:
       - type: bind
@@ -19,8 +21,8 @@ services:
         target: /app/src/telegram_smart_bots/logs
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: travel-guru-bot
+      dockerfile: src/telegram_smart_bots/bots/idea_sparring/Dockerfile
+    container_name: idea-sparring-bot
     restart: "no"
 volumes:
   dbdata6:

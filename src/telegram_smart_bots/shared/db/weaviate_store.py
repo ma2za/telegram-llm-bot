@@ -2,10 +2,7 @@ import logging
 import os
 
 import weaviate
-from dotenv import load_dotenv
 from langchain.vectorstores import Weaviate
-
-load_dotenv()
 
 logger = logging.getLogger(__name__)
 
