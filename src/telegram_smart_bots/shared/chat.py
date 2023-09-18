@@ -1,11 +1,10 @@
 import logging
 import os
+from typing import List
 
 import httpx
-from langchain import LLMChain
 from langchain.chat_models import AzureChatOpenAI
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from langchain.schema import SystemMessage
+from langchain.schema import BaseMessage
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +29,9 @@ async def beam_chat(payload):
     return out.get("text").strip() if isinstance(out, dict) else out
 
 
-async def azure_openai_chat(text: str, temperature: float = 0.1):
+async def azure_openai_chat(
+    messages: List[BaseMessage], temperature: float = 0.1
+) -> str:
     llm = AzureChatOpenAI(
         openai_api_type=os.getenv("AZURE_OPENAI_API_TYPE"),
         openai_api_base=os.getenv("AZURE_OPENAI_API_BASE"),
@@ -40,17 +41,5 @@ async def azure_openai_chat(text: str, temperature: float = 0.1):
         streaming=False,
         temperature=temperature,
     )
-    messages = [
-        SystemMessage(
-            content="""Edit, enhance, and refine the following text to resemble a travel journal
-            infused with the spirit of Hunter S. Thompson. Maintain the original content, style,
-            and language while improving readability. Embrace the chaotic and adventurous tone,
-            and do not invent events or details not present in the original text.
-            Preserve any curse words and the speaker's unique voice."""
-        ),
-        HumanMessagePromptTemplate.from_template("Text: {text}"),
-    ]
-
-    chain = LLMChain(llm=llm, prompt=ChatPromptTemplate(messages=messages))
-    result = await chain.arun(text)
-    return result
+    result = await llm._call_async(messages)
+    return result.content

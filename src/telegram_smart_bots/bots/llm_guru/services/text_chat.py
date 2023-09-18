@@ -2,8 +2,7 @@ import logging
 
 import yaml
 
-from telegram_smart_bots.shared.chat import beam_chat
-from telegram_smart_bots.shared.mongo import mongodb_manager
+from telegram_smart_bots.shared.db.mongo import mongodb_manager
 
 logger = logging.getLogger(__name__)
 
