@@ -23,7 +23,7 @@ async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 @async_typing
-async def handle_telegram_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def handle_user_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=update.message.from_user.id,

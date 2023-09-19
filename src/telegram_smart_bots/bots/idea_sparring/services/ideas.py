@@ -18,9 +18,7 @@ async def idea_chat(audio: bytes, user_id: int, duration: int) -> str:
         transcript = await transcribe_and_check(audio, user_id, duration)
         query = HumanMessage(content=transcript)
 
-        result = await collection.find_one(
-            {"telegram_id": user_id}, {"current_session": 1}
-        )
+        result = await collection.find_one({"user_id": user_id}, {"current_session": 1})
         session_name = "default" if result is None else result.get("current_session")
         chat_history = MongoDBChatMessageHistory(
             os.getenv("DB_NAME"), user_id, session_name
@@ -56,7 +54,7 @@ async def switch(user_id: int, session_name: str) -> str:
 
     try:
         await collection.update_one(
-            {"telegram_id": user_id},
+            {"user_id": user_id},
             {"$set": {"current_session": session_name}},
             upsert=True,
         )
@@ -73,9 +71,7 @@ async def summarize(user_id: int) -> str:
     collection = db[os.getenv("COLLECTION_NAME")]
 
     try:
-        result = await collection.find_one(
-            {"telegram_id": user_id}, {"current_session": 1}
-        )
+        result = await collection.find_one({"user_id": user_id}, {"current_session": 1})
         session_name = "default" if result is None else result.get("current_session")
         history = MongoDBChatMessageHistory(os.getenv("DB_NAME"), user_id, session_name)
 

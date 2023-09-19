@@ -17,7 +17,7 @@ async def check_voice_limit(user_id: int, duration: int):
     db = mongodb_manager.get_database(os.getenv("DB_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
     result = await collection.find_one(
-        {"telegram_id": user_id},
+        {"user_id": user_id},
         {
             f"limits.{date.today()}.daily_seconds": 1,
             "daily_audio_limit": 1,
@@ -55,7 +55,7 @@ async def transcribe(
     except OSError as ex:
         logger.error(ex)
     await collection.update_one(
-        {"telegram_id": user_id},
+        {"user_id": user_id},
         {"$inc": {f"limits.{date.today()}.daily_seconds": duration}},
         upsert=True,
     )
@@ -76,7 +76,7 @@ async def transcribe_and_check(
         await check_voice_limit(user_id, duration)
 
         result = await collection.find_one(
-            {"telegram_id": user_id},
+            {"user_id": user_id},
             {"language": 1},
         )
 

@@ -12,7 +12,7 @@ async def set_language(user_id, language):
 
     try:
         await collection.update_one(
-            {"telegram_id": user_id},
+            {"user_id": user_id},
             {"$set": {"language": language}},
             upsert=True,
         )

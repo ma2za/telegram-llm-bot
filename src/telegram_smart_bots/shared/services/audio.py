@@ -12,7 +12,7 @@ async def set_daily_audio_limit(user_id, daily_audio_limit):
 
     try:
         await collection.update_one(
-            {"telegram_id": user_id},
+            {"user_id": user_id},
             {"$set": {"daily_audio_limit": daily_audio_limit}},
             upsert=True,
         )

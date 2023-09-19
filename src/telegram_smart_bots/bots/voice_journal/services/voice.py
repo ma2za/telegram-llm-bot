@@ -18,11 +18,11 @@ async def voice_chat(audio: bytes, user_id: int, duration: int, msg_date: int) -
     try:
         transcript = await transcribe_and_check(audio, user_id, duration)
 
-        result = await collection.find_one({"telegram_id": user_id}, {"editor": 1})
+        result = await collection.find_one({"user_id": user_id}, {"editor": 1})
         edit = 1 if result is None else result.get("editor")
 
         chat_history = MongoDBChatMessageHistory(
-            os.getenv("DB_NAME"), user_id, f"{date.fromtimestamp(msg_date)}"
+            os.getenv("DB_NAME"), user_id, f"{date.fromtimestamp(msg_date)}", "messages"
         )
 
         if edit:

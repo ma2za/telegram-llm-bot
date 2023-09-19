@@ -18,7 +18,7 @@ from telegram.ext import Application, CommandHandler
 from telegram_smart_bots.shared.db.mongo import mongodb_manager
 from telegram_smart_bots.shared.handlers.basic import (
     handle_start,
-    handle_telegram_id,
+    handle_user_id,
     handle_language,
 )
 
@@ -43,7 +43,7 @@ def main() -> None:
     app.add_handlers(
         [
             CommandHandler("start", handle_start, block=False),
-            CommandHandler("my_id", handle_telegram_id, block=False),
+            CommandHandler("my_id", handle_user_id, block=False),
             CommandHandler("language", handle_language, block=False),
         ]
         + settings.settings.handlers

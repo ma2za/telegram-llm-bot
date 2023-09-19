@@ -17,15 +17,21 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
 
     index_created: bool = False
 
-    def __init__(self, database_name: str, user_id: int, session_id: str):
+    def __init__(
+        self,
+        database_name: str,
+        user_id: int,
+        session_id: str,
+        history_field: str = "History",
+    ):
         self.db = mongodb_manager.get_database(database_name)
         self.collection = self.db["chats"]
-
+        self.history_field = history_field
         self.user_id = user_id
         self.session_id = session_id
 
     async def setup(self):
-        await self.collection.create_index(["UserId", "SessionId"])
+        await self.collection.create_index(["user_id", "session_id"])
 
     @property
     async def messages(self) -> List[BaseMessage]:
@@ -35,19 +41,20 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
             await self.setup()
             MongoDBChatMessageHistory.index_created = True
         items = await self.collection.find_one(
-            {"UserId": self.user_id, "SessionId": self.session_id}
+            {"user_id": self.user_id, "session_id": self.session_id},
+            {self.history_field: 1},
         )
         if items is None:
             messages = []
         else:
-            messages = messages_from_dict(items["History"])
+            messages = messages_from_dict(items.get(self.history_field))
         return messages
 
     async def add_messages(self, messages: List[BaseMessage]) -> None:
         try:
             await self.collection.update_one(
-                {"UserId": self.user_id, "SessionId": self.session_id},
-                {"$push": {"History": {"$each": messages_to_dict(messages)}}},
+                {"user_id": self.user_id, "session_id": self.session_id},
+                {"$push": {self.history_field: {"$each": messages_to_dict(messages)}}},
                 upsert=True,
             )
         except errors.WriteError as err:
@@ -60,6 +67,6 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
     async def clear(self) -> None:
         """Clear session memory from MongoDB"""
         try:
-            await self.collection.delete_many({"UserId": self.user_id})
+            await self.collection.delete_many({"user_id": self.user_id})
         except errors.WriteError as err:
             logger.error(err)

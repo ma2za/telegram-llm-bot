@@ -11,7 +11,7 @@ async def text_chat_service(user_id, message_text):
     db = mongodb_manager.get_database("travel-gurus")
     collection = db["guru"]
     try:
-        result = await collection.find_one({"telegram_id": user_id})
+        result = await collection.find_one({"user_id": user_id})
         if result is None:
             messages = []
             with open("scripts/config.yml", "r") as stream:
@@ -23,12 +23,12 @@ async def text_chat_service(user_id, message_text):
         response = await beam_chat({"messages": messages + new_messages})
         new_messages += [response]
         await collection.update_one(
-            {"telegram_id": user_id},
+            {"user_id": user_id},
             {"$push": {"messages": {"$each": new_messages}}},
             upsert=True,
         )
-        msg_reply = response
+        reply_msg = response
     except Exception as ex:
         logger.error(ex)
-        msg_reply = "😿"
-    return msg_reply
+        reply_msg = "😿"
+    return reply_msg
