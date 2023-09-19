@@ -1,10 +1,10 @@
 import logging
-from typing import List
+from typing import List, Sequence, Dict
 
 from langchain.schema import (
     BaseChatMessageHistory,
 )
-from langchain.schema.messages import BaseMessage, messages_from_dict, messages_to_dict
+from langchain.schema.messages import BaseMessage, messages_from_dict
 from pymongo import errors
 
 from telegram_smart_bots.shared.db.mongo import mongodb_manager
@@ -30,6 +30,18 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
         self.user_id = user_id
         self.session_id = session_id
 
+    @staticmethod
+    def _message_to_dict(message: BaseMessage) -> dict:
+        return {"type": message.type, "data": message.model_dump()}
+
+    def messages_to_dict(self, messages: Sequence[BaseMessage]) -> Dict[str, dict]:
+        return {
+            f"{self.history_field}.{m.additional_kwargs.get('timestamp')}": self._message_to_dict(
+                m
+            )
+            for m in messages
+        }
+
     async def setup(self):
         await self.collection.create_index(["user_id", "session_id"])
 
@@ -47,14 +59,14 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
         if items is None:
             messages = []
         else:
-            messages = messages_from_dict(items.get(self.history_field))
+            messages = messages_from_dict(list(items.get(self.history_field).values()))
         return messages
 
     async def add_messages(self, messages: List[BaseMessage]) -> None:
         try:
             await self.collection.update_one(
                 {"user_id": self.user_id, "session_id": self.session_id},
-                {"$push": {self.history_field: {"$each": messages_to_dict(messages)}}},
+                {"$set": self.messages_to_dict(messages)},
                 upsert=True,
             )
         except errors.WriteError as err:
