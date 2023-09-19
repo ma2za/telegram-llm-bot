@@ -4,6 +4,10 @@ import importlib
 import logging.config
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv("./bots/voice_journal/.env")
+
 settings = importlib.import_module(os.getenv("SETTINGS_FILE"))
 
 logging.config.fileConfig("../../logging.conf", disable_existing_loggers=False)

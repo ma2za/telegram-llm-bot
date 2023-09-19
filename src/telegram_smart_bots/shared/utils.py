@@ -1,17 +1,11 @@
 import asyncio
 import logging
-from datetime import datetime
 
 from telegram import Update
 from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
 
 logger = logging.getLogger(__name__)
-
-
-def valid_date(msg_date):
-    datetime.strptime(msg_date, "%Y-%m-%d")
-    return True
 
 
 async def typing_loop(

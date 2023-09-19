@@ -17,7 +17,6 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     forward_date = update.message.forward_date
 
     msg_date = message_date if forward_date is None else forward_date
-    msg_date = int(msg_date.timestamp())
 
     reply_msg = await voice_chat(
         downloaded_file,
@@ -27,6 +26,6 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=reply_msg,
+        text=f"{int(msg_date.timestamp())}:={reply_msg}",
         reply_to_message_id=update.message.id,
     )

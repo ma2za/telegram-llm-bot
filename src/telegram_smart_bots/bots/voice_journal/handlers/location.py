@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -11,11 +12,12 @@ logger = logging.getLogger(__name__)
 
 @async_typing
 async def location_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    message_date = update.message.date
-    forward_date = update.message.forward_date
+    if update.message.caption is None:
+        forward_date = update.message.forward_date
+        msg_date = update.message.date if forward_date is None else forward_date
+    else:
+        msg_date = datetime.strptime(update.message.caption, "%Y-%m-%d")
     user_id = update.message.from_user.id
-    msg_date = message_date if forward_date is None else forward_date
-    msg_date = int(msg_date.timestamp())
     latitude = update.message.location.latitude
     longitude = update.message.location.longitude
     reply_msg = await add_location(user_id, msg_date, latitude, longitude)

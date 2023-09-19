@@ -21,7 +21,7 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
         self,
         database_name: str,
         user_id: int,
-        session_id: str,
+        session_id: str = None,
         history_field: str = "History",
     ):
         self.db = mongodb_manager.get_database(database_name)
@@ -32,7 +32,7 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
 
     @staticmethod
     def _message_to_dict(message: BaseMessage) -> dict:
-        return {"type": message.type, "data": message.model_dump()}
+        return {"type": message.type, "data": message.dict()}
 
     def messages_to_dict(self, messages: Sequence[BaseMessage]) -> Dict[str, dict]:
         return {
@@ -52,14 +52,18 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
         if not MongoDBChatMessageHistory.index_created:
             await self.setup()
             MongoDBChatMessageHistory.index_created = True
-        items = await self.collection.find_one(
-            {"user_id": self.user_id, "session_id": self.session_id},
+        filters = {"user_id": self.user_id}
+        if self.session_id is not None:
+            filters["session_id"] = self.session_id
+        cursor = self.collection.find(
+            filters,
             {self.history_field: 1},
         )
-        if items is None:
-            messages = []
-        else:
-            messages = messages_from_dict(list(items.get(self.history_field).values()))
+        messages = []
+        async for c in cursor:
+            messages.extend(
+                messages_from_dict(list(c.get(self.history_field).values()))
+            )
         return messages
 
     async def add_messages(self, messages: List[BaseMessage]) -> None:
@@ -75,6 +79,16 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
     async def add_message(self, message: BaseMessage) -> None:
         """Append the message to the record in MongoDB"""
         await self.add_messages([message])
+
+    async def remove_message(self, key: str) -> None:
+        try:
+            await self.collection.update_one(
+                {"user_id": self.user_id, "session_id": self.session_id},
+                {"$unset": {f"{self.history_field}.{key}": ""}},
+                upsert=True,
+            )
+        except errors.WriteError as err:
+            logger.error(err)
 
     async def clear(self) -> None:
         """Clear session memory from MongoDB"""

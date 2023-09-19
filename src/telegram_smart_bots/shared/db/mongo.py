@@ -1,9 +1,12 @@
 import logging
 import os
 
+from dotenv import load_dotenv
 from motor.motor_asyncio import AsyncIOMotorClient
 
 logger = logging.getLogger(__name__)
+
+load_dotenv()
 
 
 class MongoDBManager:

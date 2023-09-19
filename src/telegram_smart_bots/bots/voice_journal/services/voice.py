@@ -1,48 +1,83 @@
 import logging
 import os
-from datetime import date
+from datetime import datetime
 
 from langchain.schema import HumanMessage, SystemMessage
+from openai import InvalidRequestError
 
+from telegram_smart_bots.bots.voice_journal.services.text import add_text
 from telegram_smart_bots.shared.audio import transcribe_and_check
 from telegram_smart_bots.shared.chat import azure_openai_chat
 from telegram_smart_bots.shared.db.mongo import mongodb_manager
-from telegram_smart_bots.shared.history.history import MongoDBChatMessageHistory
 
 logger = logging.getLogger(__name__)
 
 
-async def voice_chat(audio: bytes, user_id: int, duration: int, msg_date: int) -> str:
-    db = mongodb_manager.get_database(os.getenv("DB_NAME"))
-    collection = db[os.getenv("COLLECTION_NAME")]
+async def voice_chat(
+    audio: bytes, user_id: int, duration: int, msg_date: datetime
+) -> str:
     try:
         transcript = await transcribe_and_check(audio, user_id, duration)
-
-        result = await collection.find_one({"user_id": user_id}, {"editor": 1})
-        edit = 1 if result is None else result.get("editor")
-
-        chat_history = MongoDBChatMessageHistory(
-            os.getenv("DB_NAME"), user_id, f"{date.fromtimestamp(msg_date)}", "messages"
-        )
-
-        if edit:
-            messages = [
-                SystemMessage(
-                    content="""Edit, enhance, and refine the following text to resemble a travel journal infused
-                    with a gonzo, vivid, truthful and outrageous style. Maintain the original content, style, and language while
-                    improving readability. Embrace the chaotic and adventurous tone, and do not invent events or details
-                    not present in the original text. Preserve any curse words and the speaker's unique voice."""
-                ),
-                HumanMessage(content=transcript),
-            ]
-
-            transcript = await azure_openai_chat(messages)
-        response = HumanMessage(content=transcript)
-        response.additional_kwargs["timestamp"] = msg_date
-        await chat_history.add_message(response)
-
-        reply_msg = response
+        reply_msg = await edit_text(transcript, user_id, msg_date)
+    except InvalidRequestError as ex:
+        logger.error(ex)
+        reply_msg = str(ex)
     except Exception as ex:
         logger.error(ex)
         reply_msg = "😿"
+    return reply_msg
+
+
+async def set_openai_editor(user_id: int, temperature: float = None, text: str = None):
+    db = mongodb_manager.get_database(os.getenv("DB_NAME"))
+    collection = db[os.getenv("COLLECTION_NAME")]
+
+    try:
+        if text is None:
+            await collection.update_one(
+                {"user_id": user_id},
+                {
+                    "$set": {
+                        "editor": float(temperature) if temperature is not None else 0.0
+                    }
+                },
+                upsert=True,
+            )
+
+            reply_msg = f"New temperature for editor {user_id}: {temperature}"
+        else:
+            msg_date, old_text = text.split(":=")
+            reply_msg = await edit_text(
+                old_text.strip(),
+                user_id,
+                datetime.strptime(msg_date.strip(), "%Y-%m-%d"),
+                float(temperature),
+            )
+    except Exception as ex:
+        logger.error(ex)
+        reply_msg = "😿"
+    return reply_msg
+
+
+async def edit_text(
+    transcript: str, user_id: int, msg_date: datetime, temperature: float = None
+):
+    db = mongodb_manager.get_database(os.getenv("DB_NAME"))
+    collection = db[os.getenv("COLLECTION_NAME")]
+    if temperature is None:
+        result = await collection.find_one({"user_id": user_id}, {"editor": 1})
+        temperature = 0.0 if result is None else result.get("editor", 0.0)
+    if 0 <= temperature <= 1:
+        messages = [
+            SystemMessage(
+                content="""Edit, enhance, and refine the following text to resemble a travel journal infused
+                with a gonzo, vivid, truthful and outrageous style. Maintain the original content, style, and language while
+                improving readability. Embrace the chaotic and adventurous tone, and do not invent events or details
+                not present in the original text. Preserve any curse words and the speaker's unique voice."""
+            ),
+            HumanMessage(content=transcript),
+        ]
+
+        transcript = await azure_openai_chat(messages, temperature)
+    reply_msg = await add_text(user_id, msg_date, transcript)
     return reply_msg
