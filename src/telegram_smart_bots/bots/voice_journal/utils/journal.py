@@ -6,7 +6,7 @@ import os
 import random
 from datetime import datetime
 from functools import lru_cache
-from typing import List
+from typing import List, Dict
 
 import PIL.Image as Image
 from geopy import Nominatim
@@ -29,15 +29,13 @@ body_style.fontName = "Courier"
 geolocator = Nominatim(user_agent=os.getenv("DB_NAME"))
 
 
-def build_locations_sign(locations: dict, location: str = None) -> str:
+def build_locations_sign(locations: List) -> str:
     cities = []
-    for _, loc in locations.items():
+    for loc in locations:
         address = geolocator.reverse(loc).raw.get("address")
         city = address.get("city", address.get("suburb"))
         if len(cities) == 0 or cities[-1] != city:
             cities.append(city)
-    if location is not None:
-        cities.append(location)
     if len(cities) == 0:
         return ""
     elif len(cities) == 1:
@@ -97,7 +95,7 @@ def create_photos(jrnl_entry: dict) -> list:
     return photos
 
 
-async def write(output_pdf: str, journal: dict):
+async def write(output_pdf: str, entries: Dict):
     doc = SimpleDocTemplate(
         output_pdf,
         pagesize=A5,
@@ -109,11 +107,16 @@ async def write(output_pdf: str, journal: dict):
 
     story = []
     first_page = True
-    for k, jrnl_entry in sorted(journal.items()):
+    for k, jrnl_entry in entries.items():
         if not first_page:
             story.append(PageBreak())
+
         sign = build_locations_sign(
-            jrnl_entry.get("locations", {}), jrnl_entry.get("location")
+            [
+                e.content
+                for e in jrnl_entry
+                if e.additional_kwargs.get("type") == "location"
+            ]
         )
         # TODO change date format to ordinal
         sign += f"{datetime.strptime(k, '%Y-%m-%d').strftime('%A, %B %-d, %Y')}\n\n\n"

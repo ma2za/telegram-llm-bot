@@ -1,4 +1,26 @@
+x-minio-common: &minio-common
+  image: quay.io/minio/minio:RELEASE.2023-09-16T01-01-47Z
+  command: server --console-address ":9001" http://minio{1...4}/data{1...2}
+  expose:
+    - "9000"
+    - "9001"
+    # environment:
+    # MINIO_ROOT_USER: minioadmin
+    # MINIO_ROOT_PASSWORD: minioadmin
+  healthcheck:
+    test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+    interval: 30s
+    timeout: 20s
+    retries: 3
+
+
+
 services:
+  smart-bots-minio:
+    <<: *minio-common
+    hostname: minio1
+    volumes:
+      - dataminio:/data
   smart-bots-mongo:
     env_file: .env
     image: mongo:latest
@@ -40,3 +62,4 @@ services:
     restart: "no"
 volumes:
   dbdata6:
+  dataminio:

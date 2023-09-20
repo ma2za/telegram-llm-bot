@@ -33,7 +33,11 @@ async def handle_user_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 @async_typing
 async def handle_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_msg = await set_language(update.message.from_user.id, context.args[0])
+    # TODO replace with pydantic
+    if len(context.args) != 1:
+        reply_msg = "😿"
+    else:
+        reply_msg = await set_language(update.message.from_user.id, context.args[0])
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=reply_msg,

@@ -17,16 +17,9 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
 
     index_created: bool = False
 
-    def __init__(
-        self,
-        database_name: str,
-        user_id: int,
-        session_id: str = None,
-        history_field: str = "History",
-    ):
+    def __init__(self, database_name: str, user_id: int, session_id: str = None):
         self.db = mongodb_manager.get_database(database_name)
         self.collection = self.db["chats"]
-        self.history_field = history_field
         self.user_id = user_id
         self.session_id = session_id
 
@@ -36,9 +29,7 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
 
     def messages_to_dict(self, messages: Sequence[BaseMessage]) -> Dict[str, dict]:
         return {
-            f"{self.history_field}.{m.additional_kwargs.get('timestamp')}": self._message_to_dict(
-                m
-            )
+            f"History.{m.additional_kwargs.get('timestamp')}": self._message_to_dict(m)
             for m in messages
         }
 
@@ -46,7 +37,7 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
         await self.collection.create_index(["user_id", "session_id"])
 
     @property
-    async def messages(self) -> List[BaseMessage]:
+    async def messages(self) -> Dict:
         """Retrieve the messages from MongoDB"""
         # TODO I don't like that
         if not MongoDBChatMessageHistory.index_created:
@@ -55,14 +46,11 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
         filters = {"user_id": self.user_id}
         if self.session_id is not None:
             filters["session_id"] = self.session_id
-        cursor = self.collection.find(
-            filters,
-            {self.history_field: 1},
-        )
-        messages = []
+        cursor = self.collection.find(filters)
+        messages = {}
         async for c in cursor:
-            messages.extend(
-                messages_from_dict(list(c.get(self.history_field).values()))
+            messages[c.get("session_id")] = messages_from_dict(
+                list(c.get("History", {}).values())
             )
         return messages
 
@@ -84,7 +72,7 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
         try:
             await self.collection.update_one(
                 {"user_id": self.user_id, "session_id": self.session_id},
-                {"$unset": {f"{self.history_field}.{key}": ""}},
+                {"$unset": {f"History.{key}": ""}},
                 upsert=True,
             )
         except errors.WriteError as err:

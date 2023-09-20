@@ -26,6 +26,6 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=f"{int(msg_date.timestamp())}:={reply_msg}",
+        text=reply_msg,
         reply_to_message_id=update.message.id,
     )

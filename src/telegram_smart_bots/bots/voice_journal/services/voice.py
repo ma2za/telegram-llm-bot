@@ -31,27 +31,24 @@ async def voice_chat(
 async def set_openai_editor(user_id: int, temperature: float = None, text: str = None):
     db = mongodb_manager.get_database(os.getenv("DB_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
-
     try:
         if text is None:
+            temp = float(temperature) if temperature is not None else 0.0
             await collection.update_one(
                 {"user_id": user_id},
-                {
-                    "$set": {
-                        "editor": float(temperature) if temperature is not None else 0.0
-                    }
-                },
+                {"$set": {"editor": temp}},
                 upsert=True,
             )
 
-            reply_msg = f"New temperature for editor {user_id}: {temperature}"
+            reply_msg = f"New temperature for editor {user_id}: {temp}"
         else:
+            temp = float(temperature) if temperature is not None else None
             msg_date, old_text = text.split(":=")
             reply_msg = await edit_text(
                 old_text.strip(),
                 user_id,
-                datetime.strptime(msg_date.strip(), "%Y-%m-%d"),
-                float(temperature),
+                datetime.fromtimestamp(float(msg_date.strip())),
+                temp,
             )
     except Exception as ex:
         logger.error(ex)
@@ -60,7 +57,7 @@ async def set_openai_editor(user_id: int, temperature: float = None, text: str =
 
 
 async def edit_text(
-    transcript: str, user_id: int, msg_date: datetime, temperature: float = None
+    text: str, user_id: int, msg_date: datetime, temperature: float = None
 ):
     db = mongodb_manager.get_database(os.getenv("DB_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
@@ -75,9 +72,10 @@ async def edit_text(
                 improving readability. Embrace the chaotic and adventurous tone, and do not invent events or details
                 not present in the original text. Preserve any curse words and the speaker's unique voice."""
             ),
-            HumanMessage(content=transcript),
+            HumanMessage(content=text),
         ]
 
-        transcript = await azure_openai_chat(messages, temperature)
-    reply_msg = await add_text(user_id, msg_date, transcript)
+        text = await azure_openai_chat(messages, temperature)
+
+    reply_msg = await add_text(user_id, msg_date, text)
     return reply_msg

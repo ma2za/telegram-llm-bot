@@ -14,13 +14,12 @@ async def add_location(
 ):
     try:
         loc_history = MongoDBChatMessageHistory(
-            os.getenv("DB_NAME"),
-            user_id,
-            f"{msg_date.date()}",
-            "locations",
+            os.getenv("DB_NAME"), user_id, str(msg_date.date())
         )
         loc = HumanMessage(content=f"{latitude}, {longitude}")
         loc.additional_kwargs["timestamp"] = int(msg_date.timestamp())
+        loc.additional_kwargs["type"] = "location"
+
         await loc_history.add_message(loc)
 
         reply_msg = "😄"

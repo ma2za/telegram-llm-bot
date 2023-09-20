@@ -5,6 +5,7 @@ from typing import List
 import httpx
 from langchain.chat_models import AzureChatOpenAI
 from langchain.schema import BaseMessage
+from openai import InvalidRequestError
 
 logger = logging.getLogger(__name__)
 
@@ -41,5 +42,13 @@ async def azure_openai_chat(
         streaming=False,
         temperature=temperature,
     )
-    result = await llm._call_async(messages)
-    return result.content
+    try:
+        result = await llm._call_async(messages)
+        text = result.content
+    except InvalidRequestError as ex:
+        text = messages[-1].content
+        logger.error(ex)
+    except Exception as ex:
+        text = messages[-1].content
+        logger.error(ex)
+    return text
