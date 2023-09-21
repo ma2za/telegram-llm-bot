@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 async def idea_chat(audio: bytes, user_id: int, duration: int) -> str:
-    db = mongodb_manager.get_database(os.getenv("DB_NAME"))
+    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
     try:
         transcript = await transcribe_and_check(audio, user_id, duration)
@@ -21,7 +21,7 @@ async def idea_chat(audio: bytes, user_id: int, duration: int) -> str:
         result = await collection.find_one({"user_id": user_id}, {"current_session": 1})
         session_name = "default" if result is None else result.get("current_session")
         chat_history = MongoDBChatMessageHistory(
-            os.getenv("DB_NAME"), user_id, session_name
+            os.getenv("BOT_NAME"), user_id, session_name
         )
 
         messages = await chat_history.messages
@@ -49,7 +49,7 @@ async def idea_chat(audio: bytes, user_id: int, duration: int) -> str:
 
 
 async def switch(user_id: int, session_name: str) -> str:
-    db = mongodb_manager.get_database(os.getenv("DB_NAME"))
+    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
 
     try:
@@ -67,13 +67,15 @@ async def switch(user_id: int, session_name: str) -> str:
 
 
 async def summarize(user_id: int) -> str:
-    db = mongodb_manager.get_database(os.getenv("DB_NAME"))
+    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
 
     try:
         result = await collection.find_one({"user_id": user_id}, {"current_session": 1})
         session_name = "default" if result is None else result.get("current_session")
-        history = MongoDBChatMessageHistory(os.getenv("DB_NAME"), user_id, session_name)
+        history = MongoDBChatMessageHistory(
+            os.getenv("BOT_NAME"), user_id, session_name
+        )
 
         result = await history.messages
         query = HumanMessage(
@@ -81,7 +83,7 @@ async def summarize(user_id: int) -> str:
             and propose a title that captures the essence of this idea."""
         )
 
-        response = await azure_openai_chat(result + [query])
+        response = await azure_openai_chat(dict(result) + [query])
 
         reply_msg = response
     except Exception as ex:

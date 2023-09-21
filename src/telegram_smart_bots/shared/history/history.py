@@ -37,22 +37,20 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
         await self.collection.create_index(["user_id", "session_id"])
 
     @property
-    async def messages(self) -> Dict:
+    async def messages(self):
         """Retrieve the messages from MongoDB"""
         # TODO I don't like that
-        if not MongoDBChatMessageHistory.index_created:
-            await self.setup()
-            MongoDBChatMessageHistory.index_created = True
+        # if not MongoDBChatMessageHistory.index_created:
+        #     await self.setup()
+        #     MongoDBChatMessageHistory.index_created = True
         filters = {"user_id": self.user_id}
         if self.session_id is not None:
             filters["session_id"] = self.session_id
         cursor = self.collection.find(filters)
-        messages = {}
         async for c in cursor:
-            messages[c.get("session_id")] = messages_from_dict(
+            yield c.get("session_id"), messages_from_dict(
                 list(c.get("History", {}).values())
             )
-        return messages
 
     async def add_messages(self, messages: List[BaseMessage]) -> None:
         try:

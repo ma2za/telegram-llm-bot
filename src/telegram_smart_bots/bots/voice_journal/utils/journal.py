@@ -1,12 +1,13 @@
 import asyncio
-import base64
 import io
 import logging
 import os
 import random
+from collections.abc import AsyncIterable
 from datetime import datetime
 from functools import lru_cache
-from typing import List, Dict
+from pathlib import Path
+from typing import List
 
 import PIL.Image as Image
 from geopy import Nominatim
@@ -18,6 +19,8 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, PageBreak
 
 __all__ = ["write"]
 
+from telegram_smart_bots.shared.db.minio_storage import minio_manager
+
 logger = logging.getLogger(__name__)
 
 styles = getSampleStyleSheet()
@@ -26,7 +29,7 @@ sign_style.fontName = "Courier"
 
 body_style = styles["BodyText"]
 body_style.fontName = "Courier"
-geolocator = Nominatim(user_agent=os.getenv("DB_NAME"))
+geolocator = Nominatim(user_agent=os.getenv("BOT_NAME"))
 
 
 def build_locations_sign(locations: List) -> str:
@@ -74,11 +77,13 @@ def draw_background(canvas, doc):
     canvas.restoreState()
 
 
-def create_photos(jrnl_entry: dict) -> list:
+async def create_photos(entry_date: str, user_id) -> list:
     photos = []
-    for img_k, img_v in jrnl_entry.get("photos", {}).items():
-        image_path = f".tmp/{img_k}.png"
-        image = Image.open(io.BytesIO(base64.b64decode(img_v)))
+    images = minio_manager.get_objects(user_id, entry_date)
+
+    for img_k, img_v in images:
+        image_path = f".tmp/{Path(img_k).name}"
+        image = Image.open(io.BytesIO(img_v))
         image.save(image_path)
 
         img = ReportImage(image_path)
@@ -95,7 +100,7 @@ def create_photos(jrnl_entry: dict) -> list:
     return photos
 
 
-async def write(output_pdf: str, entries: Dict):
+async def write(output_pdf: str, entries: AsyncIterable, user_id: int):
     doc = SimpleDocTemplate(
         output_pdf,
         pagesize=A5,
@@ -107,7 +112,7 @@ async def write(output_pdf: str, entries: Dict):
 
     story = []
     first_page = True
-    for k, jrnl_entry in entries.items():
+    async for k, jrnl_entry in entries:
         if not first_page:
             story.append(PageBreak())
 
@@ -122,9 +127,9 @@ async def write(output_pdf: str, entries: Dict):
         sign += f"{datetime.strptime(k, '%Y-%m-%d').strftime('%A, %B %-d, %Y')}\n\n\n"
         story.append(Paragraph(sign, sign_style))
         # TODO check strings sorting
-        photos = create_photos(jrnl_entry)
+        photos = await create_photos(k, user_id)
         text = "\n\n".join(
-            list(dict(sorted(jrnl_entry.get("messages", {}).items())).values())
+            [e.content for e in jrnl_entry if e.additional_kwargs.get("type") == "text"]
         )
         segments = evenly_split_text(text, max(1, len(photos)))
         if len(segments):

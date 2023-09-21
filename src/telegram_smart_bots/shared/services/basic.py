@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 async def set_language(user_id, language):
-    db = mongodb_manager.get_database(os.getenv("DB_NAME"))
+    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
 
     try:

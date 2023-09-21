@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 async def add_text(user_id: int, msg_date: datetime, text: str):
     try:
         chat_history = MongoDBChatMessageHistory(
-            os.getenv("DB_NAME"), user_id, str(msg_date.date())
+            os.getenv("BOT_NAME"), user_id, str(msg_date.date())
         )
         # await chat_history.clear()
         response = HumanMessage(content=text)
@@ -32,7 +32,7 @@ async def add_text(user_id: int, msg_date: datetime, text: str):
 async def discard_text(user_id: int, msg_date: datetime):
     try:
         chat_history = MongoDBChatMessageHistory(
-            os.getenv("DB_NAME"), user_id, f"{msg_date.date()}"
+            os.getenv("BOT_NAME"), user_id, f"{msg_date.date()}"
         )
         await chat_history.remove_message(str(int(msg_date.timestamp())))
         msg_reply = "😄"
@@ -45,12 +45,11 @@ async def discard_text(user_id: int, msg_date: datetime):
 async def history(user_id: int, msg_date: str = None):
     try:
         chat_history = MongoDBChatMessageHistory(
-            os.getenv("DB_NAME"), user_id, session_id=msg_date
+            os.getenv("BOT_NAME"), user_id, session_id=msg_date
         )
-        entries = await chat_history.messages
         messages = [
             f"{msg.additional_kwargs.get('timestamp')}:={msg.content}"
-            for k, v in entries.items()
+            async for k, v in chat_history.messages
             for msg in v
         ]
     except ValueError as ex:

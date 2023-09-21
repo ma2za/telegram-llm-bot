@@ -4,25 +4,30 @@ import os
 
 from langchain.schema import HumanMessage
 
+from telegram_smart_bots.shared.db.minio_storage import minio_manager
 from telegram_smart_bots.shared.history.history import MongoDBChatMessageHistory
 
 logger = logging.getLogger(__name__)
 
 
-async def add_location(
-    user_id: int, msg_date: datetime.datetime, latitude: float, longitude: float
+async def add_image(
+    user_id: int, msg_date: datetime.datetime, file_id: str, file_bytes: bytes
 ):
     try:
-        loc_history = MongoDBChatMessageHistory(
+        history = MongoDBChatMessageHistory(
             os.getenv("BOT_NAME"), user_id, str(msg_date.date())
         )
+        object_name = f"{user_id}/{str(msg_date.date())}/{file_id}.png"
+        # TODO async
+        # TODO remove old image
+        await minio_manager.put_object(object_name, file_bytes)
 
-        await loc_history.add_message(
+        await history.add_message(
             HumanMessage(
-                content=f"{latitude}, {longitude}",
+                content=object_name,
                 additional_kwargs={
                     "timestamp": int(msg_date.timestamp()),
-                    "type": "location",
+                    "type": "image",
                 },
             )
         )

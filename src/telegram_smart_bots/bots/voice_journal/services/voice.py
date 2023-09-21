@@ -29,7 +29,7 @@ async def voice_chat(
 
 
 async def set_openai_editor(user_id: int, temperature: float = None, text: str = None):
-    db = mongodb_manager.get_database(os.getenv("DB_NAME"))
+    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
     try:
         if text is None:
@@ -59,7 +59,7 @@ async def set_openai_editor(user_id: int, temperature: float = None, text: str =
 async def edit_text(
     text: str, user_id: int, msg_date: datetime, temperature: float = None
 ):
-    db = mongodb_manager.get_database(os.getenv("DB_NAME"))
+    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
     if temperature is None:
         result = await collection.find_one({"user_id": user_id}, {"editor": 1})

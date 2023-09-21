@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 async def check_voice_limit(user_id: int, duration: int):
-    db = mongodb_manager.get_database(os.getenv("DB_NAME"))
+    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
     result = await collection.find_one(
         {"user_id": user_id},
@@ -38,7 +38,7 @@ async def check_voice_limit(user_id: int, duration: int):
 async def transcribe(
     voice: bytes, user_id: int, duration: int, language: str | None = None
 ) -> str:
-    db = mongodb_manager.get_database(os.getenv("DB_NAME"))
+    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
     file_name = f".tmp/{mmh3.hash(voice)}.oga"
     with open(file_name, "wb") as new_file:
@@ -67,7 +67,7 @@ async def transcribe_and_check(
     user_id: int,
     duration: int,
 ):
-    db = mongodb_manager.get_database(os.getenv("DB_NAME"))
+    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
     # TODO set daily limit
     transcript = None

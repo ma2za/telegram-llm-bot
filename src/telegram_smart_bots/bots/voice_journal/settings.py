@@ -4,6 +4,7 @@ from typing import List, Dict
 from pydantic_settings import BaseSettings
 from telegram.ext import MessageHandler, filters, BaseHandler, CommandHandler
 
+from telegram_smart_bots.bots.voice_journal.handlers.image import image_handler
 from telegram_smart_bots.bots.voice_journal.handlers.journal import journal_handler
 from telegram_smart_bots.bots.voice_journal.handlers.location import location_handler
 from telegram_smart_bots.bots.voice_journal.handlers.text import (
@@ -23,7 +24,7 @@ class Settings(BaseSettings):
     handlers: List[BaseHandler] = [
         MessageHandler(filters.LOCATION, location_handler, block=False),
         MessageHandler(filters.VOICE, voice_handler, block=False),
-        # MessageHandler(filters.PHOTO, handle_photo, block=False),
+        MessageHandler(filters.PHOTO, image_handler, block=False),
         CommandHandler("history", history_handler, block=False),
         CommandHandler("discard", discard_text_handler, block=False),
         CommandHandler("journal", journal_handler, block=False),

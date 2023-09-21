@@ -849,6 +849,22 @@ files = [
 marshmallow = ">=2.0.0"
 
 [[package]]
+name = "minio"
+version = "7.1.16"
+description = "MinIO Python SDK for Amazon S3 Compatible Cloud Storage"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "minio-7.1.16-py3-none-any.whl", hash = "sha256:8073bed2b4b1853f3d69ab2f01a0de86264071083032985921201cfbb0950b15"},
+    {file = "minio-7.1.16.tar.gz", hash = "sha256:56ecb1e7e0103d2dc212fb460fdb70ab2abb7fa5685db378429325d96d95587a"},
+]
+
+[package.dependencies]
+certifi = "*"
+urllib3 = "*"
+
+[[package]]
 name = "mmh3"
 version = "4.0.1"
 description = "Python extension for MurmurHash (MurmurHash3), a set of fast and robust hash functions."
@@ -1936,4 +1952,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "bb5253945f49798b1da82df2110be9dd2b1563e41018e20cff114e28996eabc3"
+content-hash = "2ce7609296db7b5a194426effd0a5c2aae680a066059a6236afdb2bdb53b372c"

@@ -23,6 +23,7 @@ weaviate-client = "^3.24.1"
 [tool.poetry.group.voice_journal.dependencies]
 reportlab = "^4.0.4"
 geopy = "^2.4.0"
+minio = "^7.1.16"
 
 [build-system]
 requires = ["poetry-core"]

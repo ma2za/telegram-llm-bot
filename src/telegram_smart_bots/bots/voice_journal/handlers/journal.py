@@ -24,12 +24,9 @@ async def journal_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     journal_file = f".tmp/journal_{user_id}.pdf"
     try:
         chat_history = MongoDBChatMessageHistory(
-            os.getenv("DB_NAME"), user_id, session_id=msg_date
+            os.getenv("BOT_NAME"), user_id, session_id=msg_date
         )
-
-        entries = await chat_history.messages
-
-        await write(journal_file, entries)
+        await write(journal_file, chat_history.messages, user_id)
 
         await context.bot.send_document(
             chat_id=update.effective_chat.id,
