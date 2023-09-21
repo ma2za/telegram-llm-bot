@@ -156,3 +156,4 @@ async def write(output_pdf: str, entries: AsyncIterable, user_id: int):
         first_page = False
         await asyncio.sleep(0.01)
     doc.build(story, onFirstPage=draw_background, onLaterPages=draw_background)
+    return "😄"

@@ -13,7 +13,7 @@ class WeaviateStoreManager:
 
     def get_database(self, index_name: str, text_key: str):
         if not self.client.schema.exists(index_name):
-            self.client.schema.create_class(os.getenv())
+            self.client.schema.create_class(os.getenv("WEAVIATE_CLASS"))
 
         return Weaviate(
             client=self.client,

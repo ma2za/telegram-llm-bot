@@ -1,3 +1,4 @@
+import itertools
 import logging
 import os
 
@@ -83,7 +84,9 @@ async def summarize(user_id: int) -> str:
             and propose a title that captures the essence of this idea."""
         )
 
-        response = await azure_openai_chat(dict(result) + [query])
+        response = await azure_openai_chat(
+            list(itertools.chain.from_iterable(dict(result).values())) + [query]
+        )
 
         reply_msg = response
     except Exception as ex:

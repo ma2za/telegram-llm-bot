@@ -35,11 +35,11 @@ async def discard_text(user_id: int, msg_date: datetime):
             os.getenv("BOT_NAME"), user_id, f"{msg_date.date()}"
         )
         await chat_history.remove_message(str(int(msg_date.timestamp())))
-        msg_reply = "😄"
+        reply_msg = "😄"
     except Exception as ex:
         logger.error(ex)
-        msg_reply = "😿"
-    return msg_reply
+        reply_msg = "😿"
+    return reply_msg
 
 
 async def history(user_id: int, msg_date: str = None):

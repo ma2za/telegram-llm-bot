@@ -21,10 +21,10 @@ async def discard_text_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     msg_date = datetime.fromtimestamp(
         float(update.message.reply_to_message.text.split(":=")[0].strip())
     )
-    msg_reply = await discard_text(user_id, msg_date)
+    reply_msg = await discard_text(user_id, msg_date)
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
-        text=msg_reply,
+        text=reply_msg,
         reply_to_message_id=update.message.id,
     )
 
