@@ -1,19 +1,14 @@
 import os
 
-import torch
 import transformers
 from beam import App, Runtime, Image, Volume
-from langchain import HuggingFacePipeline
-from langchain.chains import LLMChain
-from langchain.prompts import ChatPromptTemplate
 from torch import bfloat16
 from transformers import (
-    StoppingCriteria,
-    StoppingCriteriaList,
     BitsAndBytesConfig,
     AutoConfig,
     AutoTokenizer,
     AutoModelForCausalLM,
+    Conversation,
 )
 
 HF_CACHE = "./models"
@@ -63,51 +58,28 @@ def chat(**inputs):
         MODEL_ID,
         use_auth_token=os.getenv("HF_TOKEN"),
         cache_dir=HF_CACHE,
+        use_default_system_prompt=False,
     )
 
     model.eval()
 
-    class StopOnTokens(StoppingCriteria):
-        def __call__(
-            self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs
-        ) -> bool:
-            for stop_ids in stop_token_ids:
-                if torch.eq(input_ids[0][-len(stop_ids) :], stop_ids).all():
-                    return True
-            return False
-
-    stop_list = ["\nhuman:", "\n```\n"]
-    stopping_criteria = StoppingCriteriaList([StopOnTokens()])
-
-    stop_token_ids = [
-        tokenizer(x, return_tensors="pt")["input_ids"].squeeze() for x in stop_list
-    ]
-    stop_token_ids = [torch.LongTensor(x).to("cuda") for x in stop_token_ids]
-
     pipeline = transformers.pipeline(
         model=model,
         tokenizer=tokenizer,
-        return_full_text=True,
-        task="text-generation",
-        stopping_criteria=stopping_criteria,
-        temperature=0.1,
-        max_new_tokens=1024,
+        task="conversational",
+        temperature=0.0,
+        max_length=1000,
         repetition_penalty=1.1,
     )
 
-    llm = HuggingFacePipeline(pipeline=pipeline)
     messages = inputs.get("messages")
-    script = (
-        [("system", messages[0])]
-        + [
-            (role, msg)
-            for msg, role in zip(messages[1:], ["human", "ai"] * len(messages[1:]))
-        ]
-        + [("ai", "")]
+    past_user_inputs = [m.get("data").get("content") for m in messages[:-1:2]]
+    generated_responses = [m.get("data").get("content") for m in messages[1:-1:2]]
+    text = messages[-1].get("data").get("content")
+
+    conv = Conversation(
+        text, past_user_inputs=past_user_inputs, generated_responses=generated_responses
     )
-    prompt = ChatPromptTemplate.from_role_strings(script)
 
-    llm_chain = LLMChain(prompt=prompt, llm=llm)
-
-    res = llm_chain({**inputs, **{"stop": stop_list}})
-    return {"message": res}
+    out = pipeline(conv)
+    return {"message": out.generated_responses[-1]}

@@ -22,6 +22,7 @@ services:
   minio1:
     <<: *minio-common
     hostname: minio1
+    container_name: minio1-1
     volumes:
       - data1-1:/data1
       - data1-2:/data2

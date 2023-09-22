@@ -1,32 +1,62 @@
 import logging
+import os
+from datetime import datetime
 
-import yaml
+from langchain.schema import AIMessage, SystemMessage, HumanMessage
 
-from telegram_smart_bots.shared.db.mongo import mongodb_manager
+from telegram_smart_bots.shared.chat import beam_chat
+from telegram_smart_bots.shared.history.history import MongoDBChatMessageHistory
 
 logger = logging.getLogger(__name__)
 
 
-async def text_chat_service(user_id, message_text):
-    db = mongodb_manager.get_database("travel-gurus")
-    collection = db["guru"]
+async def text_chat_service(user_id: int, text: str, msg_date: datetime):
     try:
-        result = await collection.find_one({"user_id": user_id})
-        if result is None:
-            messages = []
-            with open("scripts/config.yml", "r") as stream:
-                config = yaml.load(stream, Loader=yaml.Loader)
-            new_messages = [config.get("system"), message_text]
-        else:
-            messages = result.get("messages", [])
-            new_messages = [message_text]
-        response = await beam_chat({"messages": messages + new_messages})
-        new_messages += [response]
-        await collection.update_one(
-            {"user_id": user_id},
-            {"$push": {"messages": {"$each": new_messages}}},
-            upsert=True,
+        chat_history = MongoDBChatMessageHistory(os.getenv("BOT_NAME"), user_id)
+        messages = [msg async for k, v in chat_history.messages for msg in v]
+        new_messages = []
+        if not messages:
+            new_messages.append(
+                SystemMessage(
+                    content="""Provide me with personalized travel advice for my upcoming trip. I want to learn about
+                    the new place I'm visiting through books, movies, TV shows, YouTube channels, magazine articles,
+                    foods, documentaries, and more. I have specific preferences, so please ask me questions to
+                    understand my travel style. If I mention that I don't care about certain aspects like
+                    food or museums, respect those preferences and focus on what I do enjoy.
+                    Be enthusiastic, but not overly so.""",
+                    additional_kwargs={
+                        "type": "system",
+                        "timestamp": int(msg_date.timestamp()) - 10,
+                    },
+                )
+            )
+        new_messages.append(
+            HumanMessage(
+                content=text,
+                additional_kwargs={
+                    "type": "text",
+                    "timestamp": int(msg_date.timestamp()),
+                },
+            )
         )
+        response = await beam_chat(
+            {
+                "messages": list(
+                    chat_history.messages_to_dict(messages + new_messages).values()
+                )
+            }
+        )
+        new_messages.append(
+            AIMessage(
+                content=response,
+                additional_kwargs={
+                    "type": "text",
+                    "timestamp": int(msg_date.timestamp()) + 10,
+                },
+            )
+        )
+        await chat_history.add_messages(new_messages)
+
         reply_msg = response
     except Exception as ex:
         logger.error(ex)

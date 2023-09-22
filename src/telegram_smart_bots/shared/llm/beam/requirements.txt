@@ -5,4 +5,3 @@ bitsandbytes
 accelerate
 scipy
 xformers
-langchain

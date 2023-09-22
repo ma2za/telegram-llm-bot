@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 @async_typing
 async def text_chat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     reply_msg = await text_chat_service(
-        update.message.from_user.id, update.message.text
+        update.message.from_user.id, update.message.text, update.message.date
     )
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
