@@ -4,7 +4,7 @@ version = "0.1.0"
 description = ""
 authors = ["ma2za <mazzapaolo2019@gmail.com>"]
 readme = "README.md"
-packages = [{ include = "telegram_llm_guru", from = "src" }]
+packages = [{ include = "telegram_smart_bots", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -12,7 +12,18 @@ python-telegram-bot = "^20.5"
 python-dotenv = "^1.0.0"
 motor = "^3.3.1"
 pyyaml = "^6.0.1"
+langchain = "^0.0.292"
+openai = "^0.28.0"
+async-lru = "^2.0.4"
+mmh3 = "^4.0.1"
+pydantic-settings = "^2.0.3"
+weaviate-client = "^3.24.1"
 
+
+[tool.poetry.group.voice_journal.dependencies]
+reportlab = "^4.0.4"
+geopy = "^2.4.0"
+minio = "^7.1.16"
 
 [build-system]
 requires = ["poetry-core"]

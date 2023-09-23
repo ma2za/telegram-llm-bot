@@ -1,4 +1,4 @@
-# Free Telegram Llm ChatBot (for the first 10 hours of compute 🙇🏼‍♂️)
+# Telegram smart bots
 
 This is a guide on how to build a Telegram Bot backed by
 an LLM (i.e. llama2-chat, llama2-chat-32k, vicuna). The bot is
@@ -64,7 +64,7 @@ Then you can do everything locally. Move to the
 lm subdirectory.
 
 ```shell
-cd ./src/lm_api/
+cd ./src/telegram_smart_bots/shared/llm/beam
 ```
 
 Follow the Beam installation guide [Beam Installation](https://docs.beam.cloud/getting-started/installation).
@@ -116,16 +116,16 @@ so I will probably separate it from the rest in the future, for now this is
 not a big problem:
 
 ```shell
-git clone https://github.com/ma2za/telegram-llm-guru.git
+git clone https://github.com/ma2za/telegram-smart-bots.git
 ```
 
 Move to the bot directory
 
 ```shell
-cd telegram-llm-guru
+cd telegram-smart-bots
 ```
 
-Create a .env file to set the environment variables
+Create a .env file to set the environment variables common to all your bots
 
 ```shell
 touch .env
@@ -134,11 +134,26 @@ touch .env
 Via nano modify the content of the .env with the following content.
 
 ```shell
+MONGO_HOST=smart-bots-mongo
+MONGO_PORT=27017
+```
+
+This is required to set up a MongoDB database to store the conversations.
+
+Create another .env file specific for a bot to set the environment variables
+
+```shell
+touch ./src/telegram_smart_bots/bots/base_chatbot/.env
+```
+
+Via nano modify the content of the .env with the following content.
+
+```shell
 TELEGRAM_BOT_TOKEN =
 BEAM_TOKEN =
 BEAM_URL = https://apps.beam.cloud/{something}
-MONGO_HOST=localhost
-MONGO_PORT=27017
+SETTINGS_FILE=telegram_smart_bots.bots.base_chatbot.settings
+BOT_NAME=travel-guru
 ```
 
 **TELEGRAM_BOT_TOKEN** is the token we received earlier from the BotFather.

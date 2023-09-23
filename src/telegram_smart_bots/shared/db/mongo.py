@@ -1,17 +1,23 @@
+import logging
 import os
 
 from motor.motor_asyncio import AsyncIOMotorClient
+
+logger = logging.getLogger(__name__)
 
 
 class MongoDBManager:
     def __init__(self, host, port):
         self.client = AsyncIOMotorClient(host=host, port=port)
 
-    def get_database(self, db_name):
+    def get_database(self, db_name: str):
         return self.client[db_name]
 
     def close(self):
         self.client.close()
+
+    async def ping(self):
+        await self.client.admin.command("ping")
 
 
 mongodb_manager = MongoDBManager(

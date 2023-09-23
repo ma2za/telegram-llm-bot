@@ -1,8 +1,34 @@
+#x-minio-common: &minio-common
+#  image: quay.io/minio/minio:RELEASE.2023-09-20T22-49-55Z
+#  command: server --console-address ":9001" http://minio1/data{1...2}
+#  expose:
+#    - ${MINIO_PORT}
+#    - 9001
+#  ports:
+#    - ${MINIO_PORT}:${MINIO_PORT}
+#    - 9001:9001
+#  env_file:
+#    .env
+#  healthcheck:
+#    test: [ "CMD", "curl", "-f", "http://${MINIO_HOST}:${MINIO_PORT}/minio/health/live" ]
+#    interval: 30s
+#    timeout: 20s
+#    retries: 3
+
+
+
 services:
-  travel-guru-mongo:
+  #  minio1:
+  #    <<: *minio-common
+  #    hostname: minio1
+  #    container_name: minio1-1
+  #    volumes:
+  #      - data1-1:/data1
+  #      - data1-2:/data2
+  smart-bots-mongo:
     env_file: .env
     image: mongo:latest
-    container_name: travel-guru-mongo
+    container_name: smart-bots-mongo
     command: mongod --port ${MONGO_PORT}
     expose:
       - ${MONGO_PORT}
@@ -10,17 +36,49 @@ services:
       - ${MONGO_PORT}:${MONGO_PORT}
     volumes:
       - dbdata6:/data/db
-  travel-guru-bot:
-    env_file: .env
-    command: poetry run python3 /app/src/telegram_llm_guru/main.py
+  base-chatbot:
+    env_file:
+      - .env
+      - src/telegram_smart_bots/bots/base_chatbot/.env
+    command: poetry run python3 /app/src/telegram_smart_bots/app.py
     volumes:
       - type: bind
-        source: src/telegram_llm_guru/logs
-        target: /app/src/telegram_llm_guru/logs
+        source: src/telegram_smart_bots/logs
+        target: /app/src/telegram_smart_bots/logs
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: travel-guru-bot
+      dockerfile: src/telegram_smart_bots/bots/voice_journal/Dockerfile
+    container_name: base-chatbot
     restart: "no"
+  #  idea-sparring-bot:
+  #    env_file:
+  #      - .env
+  #      - src/telegram_smart_bots/bots/idea_sparring/.env
+  #    command: poetry run python3 /app/src/telegram_smart_bots/app.py
+  #    volumes:
+  #      - type: bind
+  #        source: src/telegram_smart_bots/logs
+  #        target: /app/src/telegram_smart_bots/logs
+  #    build:
+  #      context: .
+  #      dockerfile: src/telegram_smart_bots/bots/idea_sparring/Dockerfile
+  #    container_name: idea-sparring-bot
+  #    restart: "no"
+  #  voice-journal-bot:
+  #    env_file:
+  #      - .env
+  #      - src/telegram_smart_bots/bots/voice_journal/.env
+  #    command: poetry run python3 /app/src/telegram_smart_bots/app.py
+  #    volumes:
+  #      - type: bind
+  #        source: src/telegram_smart_bots/logs
+  #        target: /app/src/telegram_smart_bots/logs
+  #    build:
+  #      context: .
+  #      dockerfile: src/telegram_smart_bots/bots/voice_journal/Dockerfile
+  #    container_name: voice-journal-bot
+  #    restart: "no"
 volumes:
   dbdata6:
+  #data1-1:
+  #data1-2:

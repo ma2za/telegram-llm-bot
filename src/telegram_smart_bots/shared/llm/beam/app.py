@@ -1,20 +1,16 @@
 import os
 
-import torch
 import transformers
 from beam import App, Runtime, Image, Volume
-from langchain import HuggingFacePipeline
-from langchain.chains import LLMChain
-from langchain.prompts import ChatPromptTemplate
 from torch import bfloat16
 from transformers import (
-    StoppingCriteria,
-    StoppingCriteriaList,
     BitsAndBytesConfig,
     AutoConfig,
     AutoTokenizer,
     AutoModelForCausalLM,
+    Conversation,
 )
+from transformers.models.llama.tokenization_llama_fast import B_SYS, E_SYS
 
 HF_CACHE = "./models"
 MODEL_ID = "meta-llama/Llama-2-7b-chat-hf"
@@ -36,8 +32,7 @@ app = App(
 )
 
 
-@app.rest_api(keep_warm_seconds=100)
-def chat(**inputs):
+def load_model():
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
@@ -63,51 +58,43 @@ def chat(**inputs):
         MODEL_ID,
         use_auth_token=os.getenv("HF_TOKEN"),
         cache_dir=HF_CACHE,
+        use_default_system_prompt=False,
     )
 
     model.eval()
 
-    class StopOnTokens(StoppingCriteria):
-        def __call__(
-            self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs
-        ) -> bool:
-            for stop_ids in stop_token_ids:
-                if torch.eq(input_ids[0][-len(stop_ids) :], stop_ids).all():
-                    return True
-            return False
-
-    stop_list = ["\nhuman:", "\n```\n"]
-    stopping_criteria = StoppingCriteriaList([StopOnTokens()])
-
-    stop_token_ids = [
-        tokenizer(x, return_tensors="pt")["input_ids"].squeeze() for x in stop_list
-    ]
-    stop_token_ids = [torch.LongTensor(x).to("cuda") for x in stop_token_ids]
-
     pipeline = transformers.pipeline(
         model=model,
         tokenizer=tokenizer,
-        return_full_text=True,
-        task="text-generation",
-        stopping_criteria=stopping_criteria,
+        task="conversational",
         temperature=0.1,
-        max_new_tokens=1024,
+        max_length=4096,
         repetition_penalty=1.1,
     )
+    return pipeline
 
-    llm = HuggingFacePipeline(pipeline=pipeline)
+
+@app.rest_api(keep_warm_seconds=100, loader=load_model)
+def chat(**inputs):
+    pipeline = inputs["context"]
     messages = inputs.get("messages")
-    script = (
-        [("system", messages[0])]
-        + [
-            (role, msg)
-            for msg, role in zip(messages[1:], ["human", "ai"] * len(messages[1:]))
-        ]
-        + [("ai", "")]
+
+    past_user_inputs = [m.get("data").get("content") for m in messages[1:-1:2]]
+    generated_responses = [m.get("data").get("content") for m in messages[2:-1:2]]
+    text = messages[-1].get("data").get("content")
+
+    conversation = Conversation(
+        text, past_user_inputs=past_user_inputs, generated_responses=generated_responses
     )
-    prompt = ChatPromptTemplate.from_role_strings(script)
 
-    llm_chain = LLMChain(prompt=prompt, llm=llm)
+    system_prompt = f"{B_SYS}{messages[-1].get('data').get('content')}{E_SYS}"
 
-    res = llm_chain({**inputs, **{"stop": stop_list}})
-    return {"message": res}
+    if len(conversation.past_user_inputs) > 0:
+        conversation.past_user_inputs[
+            0
+        ] = f"{system_prompt}{conversation.past_user_inputs[0]}"
+    elif conversation.new_user_input:
+        conversation.new_user_input = f"{system_prompt}{conversation.new_user_input}"
+
+    out = pipeline(conversation)
+    return {"message": out.generated_responses[-1]}
