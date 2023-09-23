@@ -1,0 +1,3 @@
+[submodule "src/telegram_llm_bot/bots/voice_journal"]
+	path = src/telegram_llm_bot/bots/voice_journal
+	url = https://github.com/ma2za/voice-journal.git

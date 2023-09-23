@@ -1,34 +1,34 @@
-#x-minio-common: &minio-common
-#  image: quay.io/minio/minio:RELEASE.2023-09-20T22-49-55Z
-#  command: server --console-address ":9001" http://minio1/data{1...2}
-#  expose:
-#    - ${MINIO_PORT}
-#    - 9001
-#  ports:
-#    - ${MINIO_PORT}:${MINIO_PORT}
-#    - 9001:9001
-#  env_file:
-#    .env
-#  healthcheck:
-#    test: [ "CMD", "curl", "-f", "http://${MINIO_HOST}:${MINIO_PORT}/minio/health/live" ]
-#    interval: 30s
-#    timeout: 20s
-#    retries: 3
+x-minio-common: &minio-common
+  image: quay.io/minio/minio:RELEASE.2023-09-20T22-49-55Z
+  command: server --console-address ":9001" http://minio1/data{1...2}
+  expose:
+    - ${MINIO_PORT}
+    - 9001
+  ports:
+    - ${MINIO_PORT}:${MINIO_PORT}
+    - 9001:9001
+  env_file:
+    .env
+  healthcheck:
+    test: [ "CMD", "curl", "-f", "http://${MINIO_HOST}:${MINIO_PORT}/minio/health/live" ]
+    interval: 30s
+    timeout: 20s
+    retries: 3
 
 
 
 services:
-  #  minio1:
-  #    <<: *minio-common
-  #    hostname: minio1
-  #    container_name: minio1-1
-  #    volumes:
-  #      - data1-1:/data1
-  #      - data1-2:/data2
-  smart-bots-mongo:
+  minio1:
+    <<: *minio-common
+    hostname: minio1
+    container_name: minio1-1
+    volumes:
+      - data1-1:/data1
+      - data1-2:/data2
+  telegram-mongo:
     env_file: .env
     image: mongo:latest
-    container_name: smart-bots-mongo
+    container_name: telegram-mongo
     command: mongod --port ${MONGO_PORT}
     expose:
       - ${MONGO_PORT}
@@ -36,38 +36,10 @@ services:
       - ${MONGO_PORT}:${MONGO_PORT}
     volumes:
       - dbdata6:/data/db
-  base-chatbot:
-    env_file:
-      - .env
-      - src/telegram_llm_bot/bots/base_chatbot/.env
-    command: poetry run python3 /app/src/telegram_llm_bot/app.py
-    volumes:
-      - type: bind
-        source: src/telegram_llm_bot/logs
-        target: /app/src/telegram_llm_bot/logs
-    build:
-      context: .
-      dockerfile: src/telegram_llm_bot/bots/voice_journal/Dockerfile
-    container_name: base-chatbot
-    restart: "no"
-  #  idea-sparring-bot:
+  #  base-chatbot:
   #    env_file:
   #      - .env
-  #      - src/telegram_llm_bot/bots/idea_sparring/.env
-  #    command: poetry run python3 /app/src/telegram_llm_bot/app.py
-  #    volumes:
-  #      - type: bind
-  #        source: src/telegram_llm_bot/logs
-  #        target: /app/src/telegram_llm_bot/logs
-  #    build:
-  #      context: .
-  #      dockerfile: src/telegram_llm_bot/bots/idea_sparring/Dockerfile
-  #    container_name: idea-sparring-bot
-  #    restart: "no"
-  #  voice-journal-bot:
-  #    env_file:
-  #      - .env
-  #      - src/telegram_llm_bot/bots/voice_journal/.env
+  #      - src/telegram_llm_bot/bots/base_chatbot/.env
   #    command: poetry run python3 /app/src/telegram_llm_bot/app.py
   #    volumes:
   #      - type: bind
@@ -76,9 +48,23 @@ services:
   #    build:
   #      context: .
   #      dockerfile: src/telegram_llm_bot/bots/voice_journal/Dockerfile
-  #    container_name: voice-journal-bot
+  #    container_name: base-chatbot
   #    restart: "no"
+  voice-journal-bot:
+    env_file:
+      - .env
+      - src/telegram_llm_bot/bots/voice_journal/.env
+    command: poetry run python3 /app/src/telegram_llm_bot/app.py
+    volumes:
+      - type: bind
+        source: src/telegram_llm_bot/logs
+        target: /app/src/telegram_llm_bot/logs
+    build:
+      context: .
+      dockerfile: src/telegram_llm_bot/bots/voice_journal/Dockerfile
+    container_name: voice-journal-bot
+    restart: "no"
 volumes:
   dbdata6:
-  #data1-1:
-  #data1-2:
+  data1-1:
+  data1-2:
