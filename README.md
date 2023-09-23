@@ -64,7 +64,7 @@ Then you can do everything locally. Move to the
 lm subdirectory.
 
 ```shell
-cd ./src/telegram_smart_bots/shared/llm/beam
+cd ./src/telegram_llm_bot/shared/llm/beam
 ```
 
 Follow the Beam installation guide [Beam Installation](https://docs.beam.cloud/getting-started/installation).
@@ -143,7 +143,7 @@ This is required to set up a MongoDB database to store the conversations.
 Create another .env file specific for a bot to set the environment variables
 
 ```shell
-touch ./src/telegram_smart_bots/bots/base_chatbot/.env
+touch ./src/telegram_llm_bot/bots/base_chatbot/.env
 ```
 
 Via nano modify the content of the .env with the following content.
@@ -152,7 +152,7 @@ Via nano modify the content of the .env with the following content.
 TELEGRAM_BOT_TOKEN =
 BEAM_TOKEN =
 BEAM_URL = https://apps.beam.cloud/{something}
-SETTINGS_FILE=telegram_smart_bots.bots.base_chatbot.settings
+SETTINGS_FILE=telegram_llm_bot.bots.base_chatbot.settings
 BOT_NAME=travel-guru
 ```
 
