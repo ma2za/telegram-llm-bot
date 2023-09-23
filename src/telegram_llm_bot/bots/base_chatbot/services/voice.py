@@ -12,7 +12,7 @@ from telegram_llm_bot.shared.history.history import MongoDBChatMessageHistory
 logger = logging.getLogger(__name__)
 
 
-async def idea_chat(audio: bytes, user_id: int, duration: int) -> str:
+async def new_note(audio: bytes, user_id: int, duration: int) -> str:
     db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
     try:
@@ -60,7 +60,7 @@ async def switch(user_id: int, session_name: str) -> str:
             upsert=True,
         )
 
-        reply_msg = f"Switched to idea: {session_name}"
+        reply_msg = f"Switched to note: {session_name}"
     except Exception as ex:
         logger.error(ex)
         reply_msg = "😿"
@@ -80,8 +80,8 @@ async def summarize(user_id: int) -> str:
 
         result = await history.messages
         query = HumanMessage(
-            content="""Please summarize the refined idea that emerged from our brainstorming session
-            and propose a title that captures the essence of this idea."""
+            content="""Please summarize the notes that emerged from our brainstorming session
+            and propose a title that captures the essence of this conversation."""
         )
 
         response = await azure_openai_chat(

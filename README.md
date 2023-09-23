@@ -1,4 +1,4 @@
-# Telegram smart bots
+# Telegram LLM Bot
 
 This is a guide on how to build a Telegram Bot backed by
 an LLM (i.e. llama2-chat, llama2-chat-32k, vicuna). The bot is
@@ -116,13 +116,13 @@ so I will probably separate it from the rest in the future, for now this is
 not a big problem:
 
 ```shell
-git clone https://github.com/ma2za/telegram-smart-bots.git
+git clone https://github.com/ma2za/telegram-llm-bot.git
 ```
 
 Move to the bot directory
 
 ```shell
-cd telegram-smart-bots
+cd telegram-llm-bot
 ```
 
 Create a .env file to set the environment variables common to all your bots
@@ -134,7 +134,7 @@ touch .env
 Via nano modify the content of the .env with the following content.
 
 ```shell
-MONGO_HOST=smart-bots-mongo
+MONGO_HOST=telegram-mongo
 MONGO_PORT=27017
 ```
 
