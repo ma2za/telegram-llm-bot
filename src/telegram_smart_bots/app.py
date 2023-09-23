@@ -7,7 +7,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv("../../.env")
-load_dotenv("bots/llm_guru/.env")
+load_dotenv("bots/base_chatbot/.env")
 settings = importlib.import_module(os.getenv("SETTINGS_FILE"))
 
 logging.config.fileConfig("../../logging.conf", disable_existing_loggers=False)

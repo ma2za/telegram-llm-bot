@@ -10,6 +10,7 @@ from transformers import (
     AutoModelForCausalLM,
     Conversation,
 )
+from transformers.models.llama.tokenization_llama_fast import B_SYS, E_SYS
 
 HF_CACHE = "./models"
 MODEL_ID = "meta-llama/Llama-2-7b-chat-hf"
@@ -31,8 +32,7 @@ app = App(
 )
 
 
-@app.rest_api(keep_warm_seconds=100)
-def chat(**inputs):
+def load_model():
     bnb_config = BitsAndBytesConfig(
         load_in_4bit=True,
         bnb_4bit_quant_type="nf4",
@@ -67,19 +67,34 @@ def chat(**inputs):
         model=model,
         tokenizer=tokenizer,
         task="conversational",
-        temperature=0.0,
-        max_length=1000,
+        temperature=0.1,
+        max_length=4096,
         repetition_penalty=1.1,
     )
+    return pipeline
 
+
+@app.rest_api(keep_warm_seconds=100, loader=load_model)
+def chat(**inputs):
+    pipeline = inputs["context"]
     messages = inputs.get("messages")
-    past_user_inputs = [m.get("data").get("content") for m in messages[:-1:2]]
-    generated_responses = [m.get("data").get("content") for m in messages[1:-1:2]]
+
+    past_user_inputs = [m.get("data").get("content") for m in messages[1:-1:2]]
+    generated_responses = [m.get("data").get("content") for m in messages[2:-1:2]]
     text = messages[-1].get("data").get("content")
 
-    conv = Conversation(
+    conversation = Conversation(
         text, past_user_inputs=past_user_inputs, generated_responses=generated_responses
     )
 
-    out = pipeline(conv)
+    system_prompt = f"{B_SYS}{messages[-1].get('data').get('content')}{E_SYS}"
+
+    if len(conversation.past_user_inputs) > 0:
+        conversation.past_user_inputs[
+            0
+        ] = f"{system_prompt}{conversation.past_user_inputs[0]}"
+    elif conversation.new_user_input:
+        conversation.new_user_input = f"{system_prompt}{conversation.new_user_input}"
+
+    out = pipeline(conversation)
     return {"message": out.generated_responses[-1]}

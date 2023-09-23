@@ -3,7 +3,7 @@ import logging
 from telegram import Update
 from telegram.ext import ContextTypes
 
-from telegram_smart_bots.bots.llm_guru.services.text_chat import text_chat_service
+from telegram_smart_bots.bots.base_chatbot.services.text_chat import text_chat_service
 from telegram_smart_bots.shared.utils import async_typing
 
 logger = logging.getLogger(__name__)
