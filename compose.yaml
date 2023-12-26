@@ -47,7 +47,7 @@ services:
         target: /app/src/telegram_llm_bot/logs
     build:
       context: .
-      dockerfile: src/telegram_llm_bot/bots/voice_journal/Dockerfile
+      dockerfile: src/telegram_llm_bot/bots/base_chatbot/Dockerfile
     container_name: base-chatbot
     restart: "no"
   #  idea-sparring-bot:
