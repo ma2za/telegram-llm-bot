@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.1
+
+- Limit package metadata and CI to Python 3.11.
+- Avoid Python 3.12 installs with legacy compiled dependencies such as `numpy`, `greenlet`, and `aiohttp`.
+
 ## 0.4.0
 
 - Add `telegram-llm-bot-doctor` for local configuration diagnostics.
@@ -11,7 +16,7 @@
 
 ## 0.3.0
 
-- Add GitHub Actions CI for Python 3.11 and 3.12.
+- Add GitHub Actions CI.
 - Add SQLite chat history as the default persistent local backend.
 - Keep `memory` and `mongo` history backends available.
 - Add `/reset` to clear a user's chat history.

@@ -21,6 +21,8 @@ The default example uses `qwen2.5:0.5b` through Ollama. The model artifact is ab
 
 ## Quickstart
 
+Use Python 3.11. The current dependency stack includes older compiled packages that are not Python 3.12-safe.
+
 Install Ollama and pull the default model:
 
 ```powershell
@@ -232,4 +234,4 @@ tests/test_text_service.py                       Error message unit tests
 
 ## Version
 
-Current version: `0.4.0`.
+Current version: `0.4.1`.
