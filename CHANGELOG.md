@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.3
+
+- Add a dummy Telegram token during CI env setup so `telegram-llm-bot-doctor` can validate example configuration without a real bot token.
+- Keep doctor strict for missing, empty, and `replace-me` Telegram tokens.
+
 ## 0.4.2
 
 - Restore support for Python 3.9 through 3.13.

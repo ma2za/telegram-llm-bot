@@ -234,4 +234,4 @@ tests/test_text_service.py                       Error message unit tests
 
 ## Version
 
-Current version: `0.4.2`.
+Current version: `0.4.3`.
