@@ -1,54 +1,61 @@
 # Telegram LLM Bot
 
-A Python Telegram bot starter with local Ollama support, chat history backends, and optional Beam-hosted inference.
+Ollama-first Python starter for building a Telegram AI chatbot that runs locally, works with low-RAM CPU machines, and can be extended to hosted inference later.
 
-Current version: `0.2.0`.
+The default example uses `qwen2.5:0.5b` through Ollama. The model artifact is about 398 MB, so it is practical for small local demos while still giving useful assistant behavior. Runtime memory depends on Ollama, platform, context length, and concurrent traffic; this template keeps the default context and output limits conservative.
 
-The default local example uses `qwen2.5:0.5b`, an Ollama model listed at 398 MB with Q4_K_M quantization. It is a practical low-RAM default for CPU-only demos. Runtime memory still depends on your platform, context length, and Ollama settings, so this repo uses conservative defaults.
+## Why Use This
+
+- Local-first Telegram AI bot with no paid LLM API required.
+- Low-RAM default model: `qwen2.5:0.5b`.
+- Provider switch via env: `ollama`, `beam`, or `echo`.
+- Smoke checks that do not call Telegram or external APIs.
+- Optional live provider check for Ollama.
+- Memory history for Mongo-free local development.
+- Mongo history still available for deployed bots.
+- Poetry package scripts for repeatable runs.
 
 ## Quickstart
 
-Install Ollama, then pull the default low-RAM model:
+Install Ollama and pull the default model:
 
 ```powershell
 ollama pull qwen2.5:0.5b
 ```
 
-Install the Python app:
+Install the app:
 
 ```powershell
 poetry install
 ```
 
-Create the root env file:
+Create local env files:
 
 ```powershell
 Copy-Item .env.example .env
-```
-
-Create the bot env file and add your Telegram token:
-
-```powershell
 Copy-Item src\telegram_llm_bot\bots\base_chatbot\.env.example src\telegram_llm_bot\bots\base_chatbot\.env
 ```
 
-Run the non-network smoke check:
+Create a Telegram bot with BotFather, then put the token in:
+
+```text
+src/telegram_llm_bot/bots/base_chatbot/.env
+```
+
+Run local checks:
 
 ```powershell
 poetry run telegram-llm-bot-smoke
-```
-
-Check the local Ollama provider:
-
-```powershell
 poetry run telegram-llm-bot-provider-check
 ```
 
-Start the Telegram bot:
+Start the bot:
 
 ```powershell
 poetry run telegram-llm-bot
 ```
+
+Open Telegram and message your bot.
 
 ## Configuration
 
@@ -57,6 +64,7 @@ Root `.env`:
 ```env
 MONGO_HOST=localhost
 MONGO_PORT=27017
+CHAT_HISTORY_BACKEND=memory
 
 LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
@@ -73,38 +81,42 @@ TELEGRAM_BOT_TOKEN=
 SETTINGS_FILE=telegram_llm_bot.bots.base_chatbot.settings
 BOT_NAME=telegram-llm-bot
 COLLECTION_NAME=users
+
+BEAM_TOKEN=
+BEAM_URL=
+BEAM_APP_NAME=telegram-llm-bot
 ```
 
-Create a Telegram bot with BotFather, paste the token into `TELEGRAM_BOT_TOKEN`, and start a chat with your bot in Telegram.
+The default `CHAT_HISTORY_BACKEND=memory` keeps local setup simple. Use Mongo when you want durable chat history across restarts.
 
 ## Providers
 
+| Provider | Env value | Use case |
+| --- | --- | --- |
+| Ollama | `LLM_PROVIDER=ollama` | Default local bot with `qwen2.5:0.5b` |
+| Echo | `LLM_PROVIDER=echo` | Fast smoke tests with no model/API calls |
+| Beam | `LLM_PROVIDER=beam` | Optional hosted/self-hosted inference path |
+
 ### Ollama
 
-Default provider:
-
-```env
-LLM_PROVIDER=ollama
-OLLAMA_MODEL=qwen2.5:0.5b
-```
-
-The app calls Ollama's local chat API at:
+The Ollama provider calls:
 
 ```text
 http://localhost:11434/api/chat
 ```
 
-### Echo
-
-Use `echo` for smoke tests without Ollama, Beam, Telegram network calls, or API keys:
+Default low-RAM settings:
 
 ```env
-LLM_PROVIDER=echo
+OLLAMA_MODEL=qwen2.5:0.5b
+OLLAMA_NUM_CTX=1024
+OLLAMA_NUM_PREDICT=256
+OLLAMA_TEMPERATURE=0.2
 ```
 
 ### Beam
 
-Beam is still supported as an optional advanced provider:
+Beam support is kept as an optional advanced provider:
 
 ```env
 LLM_PROVIDER=beam
@@ -120,36 +132,73 @@ cd src\telegram_llm_bot\shared\llm\beam
 beam deploy app.py
 ```
 
+## Commands
+
+```powershell
+poetry run telegram-llm-bot-smoke
+poetry run telegram-llm-bot-provider-check
+poetry run telegram-llm-bot
+```
+
+`telegram-llm-bot-smoke` validates local configuration without calling Telegram or Ollama.
+
+`telegram-llm-bot-provider-check` sends a tiny prompt to the configured provider and prints the response.
+
+`telegram-llm-bot` starts Telegram polling.
+
 ## Docker
 
-The compose file starts MongoDB and the bot service:
+The compose file includes MongoDB and the bot service:
 
 ```powershell
 docker compose up --build
 ```
 
-If Ollama runs on your host machine, set `OLLAMA_BASE_URL` to a host-reachable URL for your Docker environment.
+If Ollama runs on the host machine, set `OLLAMA_BASE_URL` to a host-reachable URL for your Docker environment.
 
 ## Development
 
-Run checks:
+Run the release checks:
 
 ```powershell
-poetry run telegram-llm-bot-smoke
 poetry run python -m unittest
+poetry run telegram-llm-bot-smoke
+poetry run telegram-llm-bot-provider-check
 poetry run python -m compileall -q src tests
 poetry run python -m pip check
+poetry check
 ```
 
-Fast install with uv is also supported after Poetry has created or refreshed the lock:
+Build package artifacts:
+
+```powershell
+poetry build
+```
+
+Fast editable install with uv is also possible:
 
 ```powershell
 uv venv --python 3.11 --seed
 .\.venv\Scripts\python.exe -m pip install -e .
 ```
 
-## Notes
+## Project Layout
 
-- `qwen2.5:0.5b` is the default because it gives a useful local bot demo while keeping the model artifact well under 1 GB.
-- The 1 GB target is practical low-RAM local usage, not a strict process memory guarantee.
-- Do not commit `.env`, logs, model files, or Telegram tokens.
+```text
+src/telegram_llm_bot/app.py                      Telegram entrypoint
+src/telegram_llm_bot/shared/chat.py              LLM provider dispatch
+src/telegram_llm_bot/shared/history/history.py   Memory/Mongo chat history
+src/telegram_llm_bot/bots/base_chatbot/          Default bot configuration
+tests/test_chat_providers.py                     Provider unit tests
+```
+
+## Safety
+
+- Do not commit `.env` files.
+- Do not commit logs.
+- Do not commit model files.
+- Rotate any Telegram token that was pasted into public chat or committed by mistake.
+
+## Version
+
+Current version: `0.2.0`.
