@@ -51,6 +51,29 @@ class DoctorTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(code, 1)
 
+    async def test_doctor_fails_on_invalid_bot_config(self):
+        with tempfile.TemporaryDirectory() as directory:
+            config_path = os.path.join(directory, "bot.yml")
+            with open(config_path, "w") as f:
+                f.write("start: Hi\n")
+
+            with patch.dict(
+                os.environ,
+                {
+                    "TELEGRAM_BOT_TOKEN": "123456:ci-dummy-token",
+                    "BOT_NAME": "telegram-llm-bot",
+                    "BOT_CONFIG_FILE": config_path,
+                    "LLM_PROVIDER": "ollama",
+                    "CHAT_HISTORY_BACKEND": "sqlite",
+                    "SQLITE_HISTORY_PATH": f"{directory}/history.sqlite3",
+                },
+                clear=False,
+            ):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    code = await doctor_async(live=False)
+
+        self.assertEqual(code, 1)
+
     async def test_doctor_fails_on_empty_token(self):
         with tempfile.TemporaryDirectory() as directory:
             with patch.dict(

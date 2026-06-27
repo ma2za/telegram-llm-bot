@@ -71,8 +71,6 @@ async def post_init(application: Application) -> None:
 
 def smoke() -> None:
     Path(".tmp").mkdir(parents=True, exist_ok=True)
-    if not os.getenv("SETTINGS_FILE"):
-        raise ValueError("Set SETTINGS_FILE in src/telegram_llm_bot/bots/base_chatbot/.env")
     if not os.getenv("BOT_NAME"):
         raise ValueError("Set BOT_NAME in src/telegram_llm_bot/bots/base_chatbot/.env")
     backend = os.getenv("CHAT_HISTORY_BACKEND", "sqlite").strip().lower()

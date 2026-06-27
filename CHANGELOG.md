@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0
+
+- Add `telegram-llm-bot-init` to scaffold local `.env`, `bot.env`, and `bot.yml` files.
+- Add `BOT_CONFIG_FILE` support so users can configure bot prompts outside package internals.
+- Update environment loading to include local `bot.env` while preserving existing `.env` behavior.
+- Update doctor to validate the active bot config and show detected env/config files.
+- Update README and CI to use the scaffolded local setup path.
+
 ## 0.4.3
 
 - Add a dummy Telegram token during CI env setup so `telegram-llm-bot-doctor` can validate example configuration without a real bot token.

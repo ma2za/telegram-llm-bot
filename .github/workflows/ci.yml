@@ -35,9 +35,8 @@ jobs:
 
       - name: Create smoke env
         run: |
-          cp .env.example .env
-          cp src/telegram_llm_bot/bots/base_chatbot/.env.example src/telegram_llm_bot/bots/base_chatbot/.env
-          echo "TELEGRAM_BOT_TOKEN=123456:ci-dummy-token" >> src/telegram_llm_bot/bots/base_chatbot/.env
+          poetry run telegram-llm-bot-init --force
+          echo "TELEGRAM_BOT_TOKEN=123456:ci-dummy-token" >> bot.env
 
       - name: Run unit tests
         run: poetry run python -m unittest

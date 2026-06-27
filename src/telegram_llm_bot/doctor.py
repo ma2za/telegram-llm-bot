@@ -4,7 +4,9 @@ import os
 import tempfile
 from pathlib import Path
 
+from telegram_llm_bot.config import load_bot_config
 from telegram_llm_bot.paths import PROJECT_DIR, load_environment
+from telegram_llm_bot.paths import environment_files
 from telegram_llm_bot.shared.chat import (
     OLLAMA_DEFAULT_MODEL,
     chat,
@@ -30,6 +32,19 @@ def check_sqlite_path(results: list[tuple[bool, str]]) -> None:
     with tempfile.NamedTemporaryFile(dir=path.parent, delete=True):
         pass
     results.append((True, f"SQLite path writable: {path}"))
+
+
+def check_environment_files(results: list[tuple[bool, str]]) -> None:
+    detected = [str(path) for path in environment_files() if path.exists()]
+    if detected:
+        results.append((True, f"Env files: {', '.join(detected)}"))
+    else:
+        results.append((True, "Env files: none"))
+
+
+def check_bot_config(results: list[tuple[bool, str]]) -> None:
+    config = load_bot_config()
+    results.append((True, f"Bot config: {config.path}"))
 
 
 def check_provider_config(results: list[tuple[bool, str]]) -> str:
@@ -84,14 +99,15 @@ async def check_live(provider: str, backend: str, results: list[tuple[bool, str]
 async def doctor_async(live: bool = False) -> int:
     results = []
     try:
+        check_environment_files(results)
         token = os.getenv("TELEGRAM_BOT_TOKEN")
         if not token or token == "replace-me":
             raise ValueError("Set TELEGRAM_BOT_TOKEN in the bot .env file")
         results.append((True, "Telegram token present"))
 
-        if not os.getenv("SETTINGS_FILE"):
-            raise ValueError("Set SETTINGS_FILE in the bot .env file")
-        results.append((True, f"Settings module: {os.getenv('SETTINGS_FILE')}"))
+        settings_module = os.getenv("SETTINGS_FILE", "telegram_llm_bot.bots.base_chatbot.settings")
+        results.append((True, f"Settings module: {settings_module}"))
+        check_bot_config(results)
 
         if not os.getenv("BOT_NAME"):
             raise ValueError("Set BOT_NAME in the bot .env file")

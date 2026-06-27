@@ -5,6 +5,7 @@ import os
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from telegram_llm_bot.config import bot_config_path
 from telegram_llm_bot.shared.chat import OLLAMA_DEFAULT_MODEL, ollama_options
 from telegram_llm_bot.shared.history.history import get_chat_history
 from telegram_llm_bot.shared.services.basic import set_language
@@ -50,6 +51,7 @@ def settings_text() -> str:
     return "\n".join(
         [
             f"Bot: {os.getenv('BOT_NAME', 'unknown')}",
+            f"Config: {bot_config_path()}",
             model_status_text(),
         ]
     )

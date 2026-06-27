@@ -13,6 +13,7 @@ The default example uses `qwen2.5:0.5b` through Ollama. The model artifact is ab
 - Provider switch via env: `ollama`, `beam`, or `echo`.
 - Smoke checks that do not call Telegram or external APIs.
 - Config doctor for provider, history, and Telegram setup.
+- Local scaffold command that creates starter config files.
 - Optional live provider check for Ollama.
 - SQLite history for persistent Mongo-free local development.
 - `/help`, `/settings`, `/reset`, and `/model` commands for cleaner demos and debugging.
@@ -35,17 +36,16 @@ Install the app:
 poetry install
 ```
 
-Create local env files:
+Create local starter files:
 
 ```powershell
-Copy-Item .env.example .env
-Copy-Item src\telegram_llm_bot\bots\base_chatbot\.env.example src\telegram_llm_bot\bots\base_chatbot\.env
+poetry run telegram-llm-bot-init
 ```
 
 Create a Telegram bot with BotFather, then put the token in:
 
 ```text
-src/telegram_llm_bot/bots/base_chatbot/.env
+bot.env
 ```
 
 Run local checks:
@@ -66,6 +66,8 @@ Open Telegram and message your bot.
 
 ## Configuration
 
+`telegram-llm-bot-init` creates `.env`, `bot.env`, and `bot.yml`.
+
 Root `.env`:
 
 ```env
@@ -82,17 +84,23 @@ OLLAMA_NUM_PREDICT=256
 OLLAMA_TEMPERATURE=0.2
 ```
 
-Bot env at `src/telegram_llm_bot/bots/base_chatbot/.env`:
+Bot env at `bot.env`:
 
 ```env
 TELEGRAM_BOT_TOKEN=
-SETTINGS_FILE=telegram_llm_bot.bots.base_chatbot.settings
 BOT_NAME=telegram-llm-bot
-COLLECTION_NAME=users
+BOT_CONFIG_FILE=bot.yml
 
 BEAM_TOKEN=
 BEAM_URL=
 BEAM_APP_NAME=telegram-llm-bot
+```
+
+Bot config at `bot.yml`:
+
+```yaml
+start: Hello. Send me a message and I will reply.
+system: You are a helpful assistant. Answer clearly and concisely.
 ```
 
 The default `CHAT_HISTORY_BACKEND=sqlite` keeps local setup simple and persists chat history across restarts. Use Mongo when you want a deployed database backend, or `memory` for throwaway test runs.
@@ -143,12 +151,15 @@ beam deploy app.py
 ## Commands
 
 ```powershell
+poetry run telegram-llm-bot-init
 poetry run telegram-llm-bot-smoke
 poetry run telegram-llm-bot-doctor
 poetry run telegram-llm-bot-doctor --live
 poetry run telegram-llm-bot-provider-check
 poetry run telegram-llm-bot
 ```
+
+`telegram-llm-bot-init` creates local `.env`, `bot.env`, and `bot.yml` starter files.
 
 `telegram-llm-bot-smoke` validates local configuration without calling Telegram or Ollama.
 
@@ -219,6 +230,7 @@ uv venv --python 3.11 --seed
 src/telegram_llm_bot/app.py                      Telegram entrypoint
 src/telegram_llm_bot/shared/chat.py              LLM provider dispatch
 src/telegram_llm_bot/shared/history/history.py   SQLite/Memory/Mongo chat history
+src/telegram_llm_bot/config.py                   Bot YAML config loading
 src/telegram_llm_bot/bots/base_chatbot/          Default bot configuration
 tests/test_chat_providers.py                     Provider unit tests
 tests/test_doctor.py                             Config doctor unit tests
@@ -228,10 +240,11 @@ tests/test_text_service.py                       Error message unit tests
 ## Safety
 
 - Do not commit `.env` files.
+- Do not commit `bot.env`.
 - Do not commit logs.
 - Do not commit model files.
 - Rotate any Telegram token that was pasted into public chat or committed by mistake.
 
 ## Version
 
-Current version: `0.4.3`.
+Current version: `0.5.0`.

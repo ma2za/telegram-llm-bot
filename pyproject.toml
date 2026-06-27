@@ -1,6 +1,6 @@
 [project]
 name = "telegram-llm-bot"
-version = "0.4.3"
+version = "0.5.0"
 description = "Telegram AI bot starter with local Ollama and optional Beam support"
 readme = "README.md"
 requires-python = ">=3.9,<4.0"
@@ -46,6 +46,7 @@ telegram-llm-bot = "telegram_llm_bot.app:main"
 telegram-llm-bot-smoke = "telegram_llm_bot.app:smoke"
 telegram-llm-bot-provider-check = "telegram_llm_bot.app:provider_check"
 telegram-llm-bot-doctor = "telegram_llm_bot.doctor:doctor"
+telegram-llm-bot-init = "telegram_llm_bot.scaffold:main"
 
 [tool.poetry]
 packages = [{ include = "telegram_llm_bot", from = "src" }]
