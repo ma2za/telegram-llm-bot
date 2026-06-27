@@ -63,10 +63,7 @@ class SQLiteChatMessageHistory(BaseChatMessageHistory):
             return float(time.time_ns())
 
     def messages_to_dict(self, messages: Sequence[BaseMessage]) -> Dict[str, dict]:
-        return {
-            f"History.{self._timestamp_key(m)}": self._message_to_dict(m)
-            for m in messages
-        }
+        return {f"History.{self._timestamp_key(m)}": self._message_to_dict(m) for m in messages}
 
     def setup(self):
         with closing(sqlite3.connect(self.path)) as conn:
@@ -227,9 +224,7 @@ class MongoDBChatMessageHistory(BaseChatMessageHistory):
             filters["session_id"] = self.session_id
         cursor = self.collection.find(filters)
         async for c in cursor:
-            yield c.get("session_id"), messages_from_dict(
-                list(c.get("History", {}).values())
-            )
+            yield c.get("session_id"), messages_from_dict(list(c.get("History", {}).values()))
 
     async def add_messages(self, messages: List[BaseMessage]) -> None:
         try:

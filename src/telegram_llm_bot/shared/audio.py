@@ -25,9 +25,7 @@ async def check_voice_limit(user_id: int, duration: int):
     )
     if result is None:
         result = {}
-    daily_seconds = (
-        result.get("limits", {}).get(f"{date.today()}", {}).get("daily_seconds", 0)
-    )
+    daily_seconds = result.get("limits", {}).get(f"{date.today()}", {}).get("daily_seconds", 0)
     daily_audio_limit = result.get("daily_audio_limit", 300)
     # TODO handle split audio
     if daily_audio_limit - daily_seconds - duration < 0:
@@ -35,9 +33,7 @@ async def check_voice_limit(user_id: int, duration: int):
 
 
 @alru_cache
-async def transcribe(
-    voice: bytes, user_id: int, duration: int, language: str | None = None
-) -> str:
+async def transcribe(voice: bytes, user_id: int, duration: int, language: str | None = None) -> str:
     db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
     file_name = f".tmp/{mmh3.hash(voice)}.oga"

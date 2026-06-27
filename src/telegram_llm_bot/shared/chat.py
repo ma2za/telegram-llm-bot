@@ -55,8 +55,7 @@ def ollama_payload(messages: List[BaseMessage]) -> dict:
     return {
         "model": ollama_model(),
         "messages": [
-            {"role": ollama_role(message), "content": message.content}
-            for message in messages
+            {"role": ollama_role(message), "content": message.content} for message in messages
         ],
         "stream": False,
         "options": ollama_options(),
@@ -85,7 +84,14 @@ async def ollama_chat(messages: List[BaseMessage]) -> str:
     except httpx.ConnectError as ex:
         raise RuntimeError(f"Could not connect to Ollama at {base_url}") from ex
 
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as ex:
+        if response.status_code == 404:
+            raise RuntimeError(
+                f"Ollama model not found: {ollama_model()}. Run: ollama pull {ollama_model()}"
+            ) from ex
+        raise RuntimeError(f"Ollama request failed: HTTP {response.status_code}") from ex
     content = response.json().get("message", {}).get("content")
     if not content:
         raise RuntimeError("Ollama returned an empty response")
@@ -120,9 +126,7 @@ async def beam_chat(payload):
     return out.get("text").strip() if isinstance(out, dict) else out
 
 
-async def azure_openai_chat(
-    messages: List[BaseMessage], temperature: float = 0.0
-) -> str:
+async def azure_openai_chat(messages: List[BaseMessage], temperature: float = 0.0) -> str:
     llm = AzureChatOpenAI(
         openai_api_type=os.getenv("AZURE_OPENAI_API_TYPE"),
         openai_api_base=os.getenv("AZURE_OPENAI_API_BASE"),

@@ -11,9 +11,7 @@ from telegram.ext import Application, CommandHandler
 from telegram_llm_bot.paths import LOGGING_CONFIG, LOG_DIR, PACKAGE_DIR, load_environment
 
 load_environment()
-settings_module = os.getenv(
-    "SETTINGS_FILE", "telegram_llm_bot.bots.base_chatbot.settings"
-)
+settings_module = os.getenv("SETTINGS_FILE", "telegram_llm_bot.bots.base_chatbot.settings")
 settings = importlib.import_module(settings_module)
 
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -29,6 +27,8 @@ from telegram_llm_bot.shared.handlers.basic import (
     handle_language,
     handle_reset,
     handle_model,
+    handle_help,
+    handle_settings,
 )
 from telegram_llm_bot.shared.chat import chat
 from telegram_llm_bot.shared.chat import ollama_base_url, ollama_model, ollama_options
@@ -37,9 +37,7 @@ from telegram_llm_bot.shared.chat import ollama_base_url, ollama_model, ollama_o
 def build_application() -> Application:
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token or token == "replace-me":
-        raise ValueError(
-            "Set TELEGRAM_BOT_TOKEN in src/telegram_llm_bot/bots/base_chatbot/.env"
-        )
+        raise ValueError("Set TELEGRAM_BOT_TOKEN in src/telegram_llm_bot/bots/base_chatbot/.env")
 
     app = Application.builder().token(token).post_init(post_init).build()
     app.add_handlers(
@@ -49,6 +47,8 @@ def build_application() -> Application:
             CommandHandler("language", handle_language, block=False),
             CommandHandler("reset", handle_reset, block=False),
             CommandHandler("model", handle_model, block=False),
+            CommandHandler("help", handle_help, block=False),
+            CommandHandler("settings", handle_settings, block=False),
         ]
         + settings.settings.handlers
     )
@@ -62,6 +62,8 @@ async def post_init(application: Application) -> None:
             ("language", "language lang"),
             ("reset", "clear your chat history"),
             ("model", "show active provider and history backend"),
+            ("help", "show bot commands"),
+            ("settings", "show active non-secret settings"),
         ]
         + list(settings.settings.commands.items())
     )
@@ -84,7 +86,7 @@ def smoke() -> None:
         ollama_model()
         ollama_options()
     print(f"Loaded bot: {os.getenv('BOT_NAME')}")
-    print(f"Loaded handlers: {len(settings.settings.handlers) + 5}")
+    print(f"Loaded handlers: {len(settings.settings.handlers) + 7}")
     print(f"Loaded provider: {provider}")
     print(f"Loaded history: {backend}")
     print("Smoke run ok")

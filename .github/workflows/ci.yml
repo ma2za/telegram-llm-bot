@@ -44,6 +44,15 @@ jobs:
       - name: Run smoke check
         run: poetry run telegram-llm-bot-smoke
 
+      - name: Run config doctor
+        run: poetry run telegram-llm-bot-doctor
+
+      - name: Run Ruff lint
+        run: poetry run ruff check .
+
+      - name: Run Ruff format check
+        run: poetry run ruff format --check .
+
       - name: Compile Python files
         run: poetry run python -m compileall -q src tests
 

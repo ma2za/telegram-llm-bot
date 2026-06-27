@@ -9,9 +9,7 @@ from telegram.ext import ContextTypes
 logger = logging.getLogger(__name__)
 
 
-async def typing_loop(
-    update: Update, context: ContextTypes.DEFAULT_TYPE, sleep_interval: int = 1
-):
+async def typing_loop(update: Update, context: ContextTypes.DEFAULT_TYPE, sleep_interval: int = 1):
     while context.user_data[update.update_id] is None:
         try:
             await update.message.chat.send_action(ChatAction.TYPING)

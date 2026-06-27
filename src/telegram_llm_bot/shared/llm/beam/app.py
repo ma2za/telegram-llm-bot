@@ -26,9 +26,7 @@ app = App(
             path=HF_CACHE,
         )
     ],
-    runtime=Runtime(
-        gpu=GPU, cpu=4, memory=MEMORY, image=Image(python_packages="requirements.txt")
-    ),
+    runtime=Runtime(gpu=GPU, cpu=4, memory=MEMORY, image=Image(python_packages="requirements.txt")),
 )
 
 
@@ -90,9 +88,7 @@ def chat(**inputs):
     system_prompt = f"{B_SYS}{messages[-1].get('data').get('content')}{E_SYS}"
 
     if len(conversation.past_user_inputs) > 0:
-        conversation.past_user_inputs[
-            0
-        ] = f"{system_prompt}{conversation.past_user_inputs[0]}"
+        conversation.past_user_inputs[0] = f"{system_prompt}{conversation.past_user_inputs[0]}"
     elif conversation.new_user_input:
         conversation.new_user_input = f"{system_prompt}{conversation.new_user_input}"
 

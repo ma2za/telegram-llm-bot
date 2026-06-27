@@ -12,9 +12,10 @@ The default example uses `qwen2.5:0.5b` through Ollama. The model artifact is ab
 - Low-RAM default model: `qwen2.5:0.5b`.
 - Provider switch via env: `ollama`, `beam`, or `echo`.
 - Smoke checks that do not call Telegram or external APIs.
+- Config doctor for provider, history, and Telegram setup.
 - Optional live provider check for Ollama.
 - SQLite history for persistent Mongo-free local development.
-- `/reset` and `/model` commands for cleaner demos and debugging.
+- `/help`, `/settings`, `/reset`, and `/model` commands for cleaner demos and debugging.
 - Mongo history still available for deployed bots.
 - Poetry package scripts for repeatable runs.
 
@@ -49,6 +50,7 @@ Run local checks:
 
 ```powershell
 poetry run telegram-llm-bot-smoke
+poetry run telegram-llm-bot-doctor
 poetry run telegram-llm-bot-provider-check
 ```
 
@@ -140,11 +142,15 @@ beam deploy app.py
 
 ```powershell
 poetry run telegram-llm-bot-smoke
+poetry run telegram-llm-bot-doctor
+poetry run telegram-llm-bot-doctor --live
 poetry run telegram-llm-bot-provider-check
 poetry run telegram-llm-bot
 ```
 
 `telegram-llm-bot-smoke` validates local configuration without calling Telegram or Ollama.
+
+`telegram-llm-bot-doctor` checks Telegram, provider, and history configuration. Use `--live` to call Ollama and Mongo when configured.
 
 `telegram-llm-bot-provider-check` sends a tiny prompt to the configured provider and prints the response.
 
@@ -153,20 +159,28 @@ poetry run telegram-llm-bot
 ## Bot Commands
 
 ```text
+/help    show bot commands
 /my_id   show your Telegram user id
-/model   show active provider, model, and history backend
+/model   show active provider, model, context, and history backend
 /reset   clear your chat history
+/settings show active non-secret settings
 ```
 
 ## Docker
 
-The compose file includes MongoDB and the bot service:
+The compose file runs only the bot service and uses SQLite by default. If Ollama runs on the host machine, use the Docker env example so the container can reach it:
 
 ```powershell
+Copy-Item .env.docker.example .env
 docker compose up --build
 ```
 
-If Ollama runs on the host machine, set `OLLAMA_BASE_URL` to a host-reachable URL for your Docker environment.
+The Docker default uses:
+
+```env
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+CHAT_HISTORY_BACKEND=sqlite
+```
 
 ## Development
 
@@ -175,7 +189,10 @@ Run the release checks:
 ```powershell
 poetry run python -m unittest
 poetry run telegram-llm-bot-smoke
+poetry run telegram-llm-bot-doctor
 poetry run telegram-llm-bot-provider-check
+poetry run ruff check .
+poetry run ruff format --check .
 poetry run python -m compileall -q src tests
 poetry run python -m pip check
 poetry check
@@ -202,6 +219,8 @@ src/telegram_llm_bot/shared/chat.py              LLM provider dispatch
 src/telegram_llm_bot/shared/history/history.py   SQLite/Memory/Mongo chat history
 src/telegram_llm_bot/bots/base_chatbot/          Default bot configuration
 tests/test_chat_providers.py                     Provider unit tests
+tests/test_doctor.py                             Config doctor unit tests
+tests/test_text_service.py                       Error message unit tests
 ```
 
 ## Safety
@@ -213,4 +232,4 @@ tests/test_chat_providers.py                     Provider unit tests
 
 ## Version
 
-Current version: `0.3.0`.
+Current version: `0.4.0`.

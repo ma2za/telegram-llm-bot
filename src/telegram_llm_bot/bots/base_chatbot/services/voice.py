@@ -21,9 +21,7 @@ async def new_note(audio: bytes, user_id: int, duration: int) -> str:
 
         result = await collection.find_one({"user_id": user_id}, {"current_session": 1})
         session_name = "default" if result is None else result.get("current_session")
-        chat_history = MongoDBChatMessageHistory(
-            os.getenv("BOT_NAME"), user_id, session_name
-        )
+        chat_history = MongoDBChatMessageHistory(os.getenv("BOT_NAME"), user_id, session_name)
 
         messages = await chat_history.messages
         new_messages = []
@@ -74,9 +72,7 @@ async def summarize(user_id: int) -> str:
     try:
         result = await collection.find_one({"user_id": user_id}, {"current_session": 1})
         session_name = "default" if result is None else result.get("current_session")
-        history = MongoDBChatMessageHistory(
-            os.getenv("BOT_NAME"), user_id, session_name
-        )
+        history = MongoDBChatMessageHistory(os.getenv("BOT_NAME"), user_id, session_name)
 
         result = await history.messages
         query = HumanMessage(

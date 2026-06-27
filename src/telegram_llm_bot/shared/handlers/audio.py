@@ -15,9 +15,7 @@ async def daily_audio_limit_handler(update: Update, context: ContextTypes.DEFAUL
     # TODO setup auth and context validation
     if update.message.from_user.id != int(os.getenv("ADMIN_ID")):
         raise Exception
-    reply_msg = await set_daily_audio_limit(
-        int(context.args[1]), float(context.args[0])
-    )
+    reply_msg = await set_daily_audio_limit(int(context.args[1]), float(context.args[0]))
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=reply_msg,

@@ -1,6 +1,7 @@
 import importlib
 import logging
 import os
+import sqlite3
 from datetime import datetime
 
 from langchain.schema import AIMessage, SystemMessage, HumanMessage
@@ -11,6 +12,19 @@ from telegram_llm_bot.shared.history.history import get_chat_history
 settings = importlib.import_module(os.getenv("SETTINGS_FILE"))
 
 logger = logging.getLogger(__name__)
+
+
+def user_error_message(ex: Exception) -> str:
+    text = str(ex)
+    if "Could not connect to Ollama" in text:
+        return "Ollama is not running or is unreachable. Start Ollama and try again."
+    if "Ollama model not found" in text:
+        return text
+    if isinstance(ex, sqlite3.Error) or "unable to open database file" in text:
+        return "Chat history storage is not writable. Check SQLITE_HISTORY_PATH."
+    if "Unsupported LLM_PROVIDER" in text or "Set LLM_PROVIDER" in text:
+        return "The LLM provider is not configured correctly."
+    return "I could not generate a response. Check the bot logs for details."
 
 
 async def text_chat_service(user_id: int, text: str, msg_date: datetime):
@@ -53,6 +67,6 @@ async def text_chat_service(user_id: int, text: str, msg_date: datetime):
 
         reply_msg = response or "I could not generate a response."
     except Exception as ex:
-        logger.error(ex)
-        reply_msg = "😿"
+        logger.exception(ex)
+        reply_msg = user_error_message(ex)
     return reply_msg

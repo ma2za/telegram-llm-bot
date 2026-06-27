@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.4.0
+
+- Add `telegram-llm-bot-doctor` for local configuration diagnostics.
+- Add `/help` and `/settings` bot commands.
+- Expand `/model` to show Ollama context size.
+- Return clearer user-facing messages for Ollama and SQLite runtime failures.
+- Update Docker Compose for the SQLite/Ollama-first path.
+- Add Ruff lint and format checks to CI.
+
 ## 0.3.0
 
 - Add GitHub Actions CI for Python 3.11 and 3.12.

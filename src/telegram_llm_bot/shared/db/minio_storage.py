@@ -20,17 +20,13 @@ class MinioManager:
             self.client.make_bucket(self.bucket_name)
         Path(".tmp").mkdir(parents=True, exist_ok=True)
 
-    def get_objects(
-        self, user_id: int, session_id: str = None, object_name: str = None
-    ):
+    def get_objects(self, user_id: int, session_id: str = None, object_name: str = None):
         prefix = f"{user_id}/"
         if session_id is not None:
             prefix += f"{session_id}/"
             if object_name is not None:
                 prefix += f"{object_name}"
-        for obj in self.client.list_objects(
-            self.bucket_name, prefix=prefix, recursive=True
-        ):
+        for obj in self.client.list_objects(self.bucket_name, prefix=prefix, recursive=True):
             yield obj.object_name, self.get_object(obj.object_name)
 
     def get_object(self, object_name: str) -> bytes:
@@ -59,6 +55,4 @@ class MinioManager:
             os.remove(temp_file)
 
 
-minio_manager = MinioManager(
-    host=os.getenv("MINIO_HOST"), port=int(os.getenv("MINIO_PORT"))
-)
+minio_manager = MinioManager(host=os.getenv("MINIO_HOST"), port=int(os.getenv("MINIO_PORT")))
