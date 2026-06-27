@@ -1,5 +1,7 @@
 # Telegram LLM Bot
 
+[![CI](https://github.com/ma2za/telegram-llm-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/ma2za/telegram-llm-bot/actions/workflows/ci.yml)
+
 Ollama-first Python starter for building a Telegram AI chatbot that runs locally, works with low-RAM CPU machines, and can be extended to hosted inference later.
 
 The default example uses `qwen2.5:0.5b` through Ollama. The model artifact is about 398 MB, so it is practical for small local demos while still giving useful assistant behavior. Runtime memory depends on Ollama, platform, context length, and concurrent traffic; this template keeps the default context and output limits conservative.
@@ -11,7 +13,8 @@ The default example uses `qwen2.5:0.5b` through Ollama. The model artifact is ab
 - Provider switch via env: `ollama`, `beam`, or `echo`.
 - Smoke checks that do not call Telegram or external APIs.
 - Optional live provider check for Ollama.
-- Memory history for Mongo-free local development.
+- SQLite history for persistent Mongo-free local development.
+- `/reset` and `/model` commands for cleaner demos and debugging.
 - Mongo history still available for deployed bots.
 - Poetry package scripts for repeatable runs.
 
@@ -64,7 +67,8 @@ Root `.env`:
 ```env
 MONGO_HOST=localhost
 MONGO_PORT=27017
-CHAT_HISTORY_BACKEND=memory
+CHAT_HISTORY_BACKEND=sqlite
+SQLITE_HISTORY_PATH=.tmp/chat_history.sqlite3
 
 LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
@@ -87,7 +91,7 @@ BEAM_URL=
 BEAM_APP_NAME=telegram-llm-bot
 ```
 
-The default `CHAT_HISTORY_BACKEND=memory` keeps local setup simple. Use Mongo when you want durable chat history across restarts.
+The default `CHAT_HISTORY_BACKEND=sqlite` keeps local setup simple and persists chat history across restarts. Use Mongo when you want a deployed database backend, or `memory` for throwaway test runs.
 
 ## Providers
 
@@ -146,6 +150,14 @@ poetry run telegram-llm-bot
 
 `telegram-llm-bot` starts Telegram polling.
 
+## Bot Commands
+
+```text
+/my_id   show your Telegram user id
+/model   show active provider, model, and history backend
+/reset   clear your chat history
+```
+
 ## Docker
 
 The compose file includes MongoDB and the bot service:
@@ -187,7 +199,7 @@ uv venv --python 3.11 --seed
 ```text
 src/telegram_llm_bot/app.py                      Telegram entrypoint
 src/telegram_llm_bot/shared/chat.py              LLM provider dispatch
-src/telegram_llm_bot/shared/history/history.py   Memory/Mongo chat history
+src/telegram_llm_bot/shared/history/history.py   SQLite/Memory/Mongo chat history
 src/telegram_llm_bot/bots/base_chatbot/          Default bot configuration
 tests/test_chat_providers.py                     Provider unit tests
 ```
@@ -201,4 +213,4 @@ tests/test_chat_providers.py                     Provider unit tests
 
 ## Version
 
-Current version: `0.2.0`.
+Current version: `0.3.0`.

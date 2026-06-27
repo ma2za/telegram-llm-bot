@@ -1,5 +1,10 @@
 import logging
 import os
+import json
+import sqlite3
+import time
+from contextlib import closing
+from pathlib import Path
 from typing import List, Sequence, Dict
 
 from langchain.schema import (
@@ -8,15 +13,151 @@ from langchain.schema import (
 from langchain.schema.messages import BaseMessage, messages_from_dict
 from pymongo import errors
 
+from telegram_llm_bot.paths import PROJECT_DIR
 from telegram_llm_bot.shared.db.mongo import mongodb_manager
 
 logger = logging.getLogger(__name__)
 
 
 def get_chat_history(database_name: str, user_id: int, session_id: str = None):
-    if os.getenv("CHAT_HISTORY_BACKEND", "mongo").strip().lower() == "memory":
+    backend = os.getenv("CHAT_HISTORY_BACKEND", "sqlite").strip().lower()
+    if backend == "sqlite":
+        return SQLiteChatMessageHistory(database_name, user_id, session_id)
+    if backend == "memory":
         return InMemoryChatMessageHistory(database_name, user_id, session_id)
-    return MongoDBChatMessageHistory(database_name, user_id, session_id)
+    if backend == "mongo":
+        return MongoDBChatMessageHistory(database_name, user_id, session_id)
+    raise ValueError(f"Unsupported CHAT_HISTORY_BACKEND: {backend}")
+
+
+class SQLiteChatMessageHistory(BaseChatMessageHistory):
+    def __init__(self, database_name: str, user_id: int, session_id: str = None):
+        self.database_name = database_name
+        self.user_id = user_id
+        self.session_id = session_id
+        self.session_key = session_id or ""
+        self.path = self._database_path()
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.setup()
+
+    @staticmethod
+    def _database_path():
+        configured = os.getenv("SQLITE_HISTORY_PATH", ".tmp/chat_history.sqlite3")
+        path = Path(configured)
+        return path if path.is_absolute() else PROJECT_DIR / path
+
+    @staticmethod
+    def _message_to_dict(message: BaseMessage) -> dict:
+        return {"type": message.type, "data": message.dict()}
+
+    @staticmethod
+    def _timestamp_key(message: BaseMessage) -> str:
+        timestamp = message.additional_kwargs.get("timestamp")
+        return str(timestamp if timestamp is not None else time.time_ns())
+
+    @staticmethod
+    def _sort_key(timestamp_key: str) -> float:
+        try:
+            return float(timestamp_key)
+        except ValueError:
+            return float(time.time_ns())
+
+    def messages_to_dict(self, messages: Sequence[BaseMessage]) -> Dict[str, dict]:
+        return {
+            f"History.{self._timestamp_key(m)}": self._message_to_dict(m)
+            for m in messages
+        }
+
+    def setup(self):
+        with closing(sqlite3.connect(self.path)) as conn:
+            conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS chat_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    database_name TEXT NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    session_id TEXT NOT NULL,
+                    timestamp_key TEXT NOT NULL,
+                    sort_key REAL NOT NULL,
+                    message_type TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    metadata_json TEXT NOT NULL,
+                    message_json TEXT NOT NULL,
+                    UNIQUE(database_name, user_id, session_id, timestamp_key)
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE INDEX IF NOT EXISTS chat_messages_lookup
+                ON chat_messages(database_name, user_id, session_id, sort_key, id)
+                """
+            )
+            conn.commit()
+
+    @property
+    async def messages(self):
+        with closing(sqlite3.connect(self.path)) as conn:
+            rows = conn.execute(
+                """
+                SELECT message_json
+                FROM chat_messages
+                WHERE database_name = ? AND user_id = ? AND session_id = ?
+                ORDER BY sort_key, id
+                """,
+                (self.database_name, self.user_id, self.session_key),
+            ).fetchall()
+        yield self.session_id, messages_from_dict([json.loads(row[0]) for row in rows])
+
+    async def add_messages(self, messages: List[BaseMessage]) -> None:
+        records = []
+        for message in messages:
+            timestamp_key = self._timestamp_key(message)
+            records.append(
+                (
+                    self.database_name,
+                    self.user_id,
+                    self.session_key,
+                    timestamp_key,
+                    self._sort_key(timestamp_key),
+                    message.type,
+                    message.content,
+                    json.dumps(message.additional_kwargs),
+                    json.dumps(self._message_to_dict(message)),
+                )
+            )
+        with closing(sqlite3.connect(self.path)) as conn:
+            conn.executemany(
+                """
+                INSERT OR REPLACE INTO chat_messages (
+                    database_name,
+                    user_id,
+                    session_id,
+                    timestamp_key,
+                    sort_key,
+                    message_type,
+                    content,
+                    metadata_json,
+                    message_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                records,
+            )
+            conn.commit()
+
+    async def add_message(self, message: BaseMessage) -> None:
+        await self.add_messages([message])
+
+    async def clear(self) -> None:
+        with closing(sqlite3.connect(self.path)) as conn:
+            conn.execute(
+                """
+                DELETE FROM chat_messages
+                WHERE database_name = ? AND user_id = ? AND session_id = ?
+                """,
+                (self.database_name, self.user_id, self.session_key),
+            )
+            conn.commit()
 
 
 class InMemoryChatMessageHistory(BaseChatMessageHistory):

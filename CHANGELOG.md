@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- Add GitHub Actions CI for Python 3.11 and 3.12.
+- Add SQLite chat history as the default persistent local backend.
+- Keep `memory` and `mongo` history backends available.
+- Add `/reset` to clear a user's chat history.
+- Add `/model` to show active provider, model, and history backend without secrets.
+- Update README and env examples for SQLite-first local setup.
+
 ## 0.2.0
 
 - Add Ollama provider support with `qwen2.5:0.5b` as the default low-RAM local model.

@@ -27,6 +27,8 @@ from telegram_llm_bot.shared.handlers.basic import (
     handle_start,
     handle_user_id,
     handle_language,
+    handle_reset,
+    handle_model,
 )
 from telegram_llm_bot.shared.chat import chat
 from telegram_llm_bot.shared.chat import ollama_base_url, ollama_model, ollama_options
@@ -45,6 +47,8 @@ def build_application() -> Application:
             CommandHandler("start", handle_start, block=False),
             CommandHandler("my_id", handle_user_id, block=False),
             CommandHandler("language", handle_language, block=False),
+            CommandHandler("reset", handle_reset, block=False),
+            CommandHandler("model", handle_model, block=False),
         ]
         + settings.settings.handlers
     )
@@ -53,21 +57,25 @@ def build_application() -> Application:
 
 async def post_init(application: Application) -> None:
     await application.bot.set_my_commands(
-        [("my_id", "my_id"), ("language", "language lang")]
+        [
+            ("my_id", "show your Telegram user id"),
+            ("language", "language lang"),
+            ("reset", "clear your chat history"),
+            ("model", "show active provider and history backend"),
+        ]
         + list(settings.settings.commands.items())
     )
 
 
 def smoke() -> None:
     Path(".tmp").mkdir(parents=True, exist_ok=True)
-    if not os.getenv("MONGO_HOST"):
-        raise ValueError("Set MONGO_HOST in .env")
-    if not os.getenv("MONGO_PORT"):
-        raise ValueError("Set MONGO_PORT in .env")
     if not os.getenv("SETTINGS_FILE"):
         raise ValueError("Set SETTINGS_FILE in src/telegram_llm_bot/bots/base_chatbot/.env")
     if not os.getenv("BOT_NAME"):
         raise ValueError("Set BOT_NAME in src/telegram_llm_bot/bots/base_chatbot/.env")
+    backend = os.getenv("CHAT_HISTORY_BACKEND", "sqlite").strip().lower()
+    if backend == "mongo" and (not os.getenv("MONGO_HOST") or not os.getenv("MONGO_PORT")):
+        raise ValueError("Set MONGO_HOST and MONGO_PORT in .env when CHAT_HISTORY_BACKEND=mongo")
     provider = os.getenv("LLM_PROVIDER")
     if not provider:
         raise ValueError("Set LLM_PROVIDER in .env")
@@ -76,8 +84,9 @@ def smoke() -> None:
         ollama_model()
         ollama_options()
     print(f"Loaded bot: {os.getenv('BOT_NAME')}")
-    print(f"Loaded handlers: {len(settings.settings.handlers) + 3}")
+    print(f"Loaded handlers: {len(settings.settings.handlers) + 5}")
     print(f"Loaded provider: {provider}")
+    print(f"Loaded history: {backend}")
     print("Smoke run ok")
 
 

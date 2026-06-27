@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry
+        run: pipx install poetry
+
+      - name: Configure Poetry
+        run: poetry config virtualenvs.in-project true
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Create smoke env
+        run: |
+          cp .env.example .env
+          cp src/telegram_llm_bot/bots/base_chatbot/.env.example src/telegram_llm_bot/bots/base_chatbot/.env
+
+      - name: Run unit tests
+        run: poetry run python -m unittest
+
+      - name: Run smoke check
+        run: poetry run telegram-llm-bot-smoke
+
+      - name: Compile Python files
+        run: poetry run python -m compileall -q src tests
+
+      - name: Check installed dependencies
+        run: poetry run python -m pip check
+
+      - name: Check package metadata
+        run: poetry check
