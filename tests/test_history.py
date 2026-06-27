@@ -3,14 +3,13 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from langchain.schema import AIMessage, HumanMessage
-
 from telegram_llm_bot.shared.history.history import (
     InMemoryChatMessageHistory,
     MongoDBChatMessageHistory,
     SQLiteChatMessageHistory,
     get_chat_history,
 )
+from telegram_llm_bot.shared.messages import AIMessage, HumanMessage
 
 
 class HistoryBackendSelectionTest(unittest.TestCase):

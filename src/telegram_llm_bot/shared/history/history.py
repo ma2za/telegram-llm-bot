@@ -7,14 +7,11 @@ from contextlib import closing
 from pathlib import Path
 from typing import List, Sequence, Dict
 
-from langchain.schema import (
-    BaseChatMessageHistory,
-)
-from langchain.schema.messages import BaseMessage, messages_from_dict
 from pymongo import errors
 
 from telegram_llm_bot.paths import PROJECT_DIR
 from telegram_llm_bot.shared.db.mongo import mongodb_manager
+from telegram_llm_bot.shared.messages import BaseMessage, messages_from_dict
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +27,7 @@ def get_chat_history(database_name: str, user_id: int, session_id: str = None):
     raise ValueError(f"Unsupported CHAT_HISTORY_BACKEND: {backend}")
 
 
-class SQLiteChatMessageHistory(BaseChatMessageHistory):
+class SQLiteChatMessageHistory:
     def __init__(self, database_name: str, user_id: int, session_id: str = None):
         self.database_name = database_name
         self.user_id = user_id
@@ -157,7 +154,7 @@ class SQLiteChatMessageHistory(BaseChatMessageHistory):
             conn.commit()
 
 
-class InMemoryChatMessageHistory(BaseChatMessageHistory):
+class InMemoryChatMessageHistory:
     histories = {}
 
     def __init__(self, database_name: str, user_id: int, session_id: str = None):
@@ -188,7 +185,7 @@ class InMemoryChatMessageHistory(BaseChatMessageHistory):
         self.histories.pop(self.key, None)
 
 
-class MongoDBChatMessageHistory(BaseChatMessageHistory):
+class MongoDBChatMessageHistory:
     """Chat message history that stores history in MongoDB."""
 
     index_created: bool = False

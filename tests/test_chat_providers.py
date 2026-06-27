@@ -2,9 +2,8 @@ import os
 import unittest
 from unittest.mock import AsyncMock, Mock, patch
 
-from langchain.schema import AIMessage, HumanMessage, SystemMessage
-
 from telegram_llm_bot.shared import chat
+from telegram_llm_bot.shared.messages import AIMessage, HumanMessage, SystemMessage
 
 
 class ProviderSelectionTest(unittest.TestCase):

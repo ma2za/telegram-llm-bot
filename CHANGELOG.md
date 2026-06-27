@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.2
+
+- Restore support for Python 3.9 through 3.13.
+- Remove LangChain from the default runtime path to avoid stale `numpy`, `numexpr`, and `greenlet` builds.
+- Remove the legacy OpenAI SDK, `mmh3`, `pydantic-settings`, and Weaviate client from default dependencies.
+- Add lightweight internal chat message classes used by providers and history storage.
+
 ## 0.4.1
 
 - Limit package metadata and CI to Python 3.11.

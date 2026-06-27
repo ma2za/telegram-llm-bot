@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 import yaml
-from pydantic_settings import BaseSettings
 from telegram.ext import MessageHandler, filters, BaseHandler
 
 from telegram_llm_bot.paths import BASE_CHATBOT_DIR, load_environment
@@ -16,24 +15,12 @@ logger = logging.getLogger(__name__)
 
 
 # TODO maybe move to config
-class Settings(BaseSettings):
-    handlers: List[BaseHandler] = [
-        MessageHandler(filters.TEXT, text_chat_handler, block=False),
-        # MessageHandler(filters.VOICE, note_handler, block=False),
-        # CommandHandler("note", switch_handler, block=False),
-        # CommandHandler("summarize", summarize_handler, block=False),
-        # CommandHandler("audio_limit", daily_audio_limit_handler, block=False),
-    ]
-
-    commands: Dict[str, str] = {
-        # "note": "note name (no spaces)",
-        # "summarize": "summarize current conversation",
-    }
-    system_prompt: str = ""
-    start_message: str = ""
-
+class Settings:
     def __init__(self, config_file: Path, **values: Any):
-        super().__init__(**values)
+        self.handlers: List[BaseHandler] = [
+            MessageHandler(filters.TEXT, text_chat_handler, block=False),
+        ]
+        self.commands: Dict[str, str] = {}
         with open(config_file, "r") as f:
             config = yaml.safe_load(f)
         self.system_prompt = config.get("system") or ""

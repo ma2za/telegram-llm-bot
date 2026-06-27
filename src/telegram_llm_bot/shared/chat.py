@@ -3,9 +3,8 @@ import os
 from typing import List
 
 import httpx
-from langchain.chat_models import AzureChatOpenAI
-from langchain.schema import BaseMessage
-from openai import InvalidRequestError
+
+from telegram_llm_bot.shared.messages import BaseMessage
 
 logger = logging.getLogger(__name__)
 
@@ -127,22 +126,21 @@ async def beam_chat(payload):
 
 
 async def azure_openai_chat(messages: List[BaseMessage], temperature: float = 0.0) -> str:
-    llm = AzureChatOpenAI(
-        openai_api_type=os.getenv("AZURE_OPENAI_API_TYPE"),
-        openai_api_base=os.getenv("AZURE_OPENAI_API_BASE"),
-        openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-        openai_api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        deployment_name=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
-        streaming=False,
-        temperature=temperature,
-    )
-    try:
-        result = await llm._call_async(messages)
-        text = result.content
-    except InvalidRequestError as ex:
-        text = messages[-1].content
-        logger.error(ex)
-    except Exception as ex:
-        text = messages[-1].content
-        logger.error(ex)
-    return text
+    base_url = os.getenv("AZURE_OPENAI_API_BASE", "").rstrip("/")
+    deployment = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+    api_version = os.getenv("AZURE_OPENAI_API_VERSION")
+    api_key = os.getenv("AZURE_OPENAI_API_KEY")
+    if not base_url or not deployment or not api_version or not api_key:
+        raise RuntimeError("Set Azure OpenAI env vars before using voice features")
+
+    payload = {
+        "messages": [
+            {"role": ollama_role(message), "content": message.content} for message in messages
+        ],
+        "temperature": temperature,
+    }
+    url = f"{base_url}/openai/deployments/{deployment}/chat/completions?api-version={api_version}"
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, headers={"api-key": api_key}, json=payload, timeout=120)
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"].strip()

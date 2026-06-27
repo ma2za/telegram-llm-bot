@@ -4,8 +4,6 @@ import os
 import tempfile
 from pathlib import Path
 
-from langchain.schema import HumanMessage, SystemMessage
-
 from telegram_llm_bot.paths import PROJECT_DIR, load_environment
 from telegram_llm_bot.shared.chat import (
     OLLAMA_DEFAULT_MODEL,
@@ -15,6 +13,7 @@ from telegram_llm_bot.shared.chat import (
     ollama_options,
 )
 from telegram_llm_bot.shared.db.mongo import mongodb_manager
+from telegram_llm_bot.shared.messages import HumanMessage, SystemMessage
 
 load_environment()
 

@@ -1,14 +1,14 @@
 import logging
 import os
+import hashlib
 from datetime import date
+from typing import Optional
 
-import mmh3
-import openai
 from async_lru import alru_cache
-from langchain.schema import SystemMessage, HumanMessage
 
 from telegram_llm_bot.shared.chat import azure_openai_chat
 from telegram_llm_bot.shared.db.mongo import mongodb_manager
+from telegram_llm_bot.shared.messages import HumanMessage, SystemMessage
 
 logger = logging.getLogger(__name__)
 
@@ -33,19 +33,33 @@ async def check_voice_limit(user_id: int, duration: int):
 
 
 @alru_cache
-async def transcribe(voice: bytes, user_id: int, duration: int, language: str | None = None) -> str:
+async def transcribe(
+    voice: bytes, user_id: int, duration: int, language: Optional[str] = None
+) -> str:
     db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
     collection = db[os.getenv("COLLECTION_NAME")]
-    file_name = f".tmp/{mmh3.hash(voice)}.oga"
+    file_name = f".tmp/{hashlib.sha256(voice).hexdigest()}.oga"
     with open(file_name, "wb") as new_file:
         new_file.write(voice)
     trans_kwargs = {} if language is None else {"language": language}
-    result = await openai.Audio.atranscribe(
-        "whisper-1",
-        open(file_name, "rb"),
-        api_key=os.getenv("OPENAI_API_KEY"),
-        **trans_kwargs,
-    )
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("Set OPENAI_API_KEY before using voice transcription")
+    import httpx
+
+    with open(file_name, "rb") as audio_file:
+        files = {"file": (file_name, audio_file, "audio/ogg")}
+        data = {"model": "whisper-1", **trans_kwargs}
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.openai.com/v1/audio/transcriptions",
+                headers={"Authorization": f"Bearer {api_key}"},
+                data=data,
+                files=files,
+                timeout=120,
+            )
+    response.raise_for_status()
+    result = response.json()
     try:
         os.remove(file_name)
     except OSError as ex:

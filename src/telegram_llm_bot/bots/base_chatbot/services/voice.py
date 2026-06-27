@@ -2,12 +2,11 @@ import itertools
 import logging
 import os
 
-from langchain.schema import HumanMessage, AIMessage, SystemMessage
-
 from telegram_llm_bot.shared.audio import transcribe_and_check
 from telegram_llm_bot.shared.chat import azure_openai_chat
 from telegram_llm_bot.shared.db.mongo import mongodb_manager
 from telegram_llm_bot.shared.history.history import MongoDBChatMessageHistory
+from telegram_llm_bot.shared.messages import AIMessage, HumanMessage, SystemMessage
 
 logger = logging.getLogger(__name__)
 

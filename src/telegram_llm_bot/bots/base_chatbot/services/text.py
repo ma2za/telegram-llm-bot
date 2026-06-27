@@ -4,10 +4,9 @@ import os
 import sqlite3
 from datetime import datetime
 
-from langchain.schema import AIMessage, SystemMessage, HumanMessage
-
 from telegram_llm_bot.shared.chat import chat
 from telegram_llm_bot.shared.history.history import get_chat_history
+from telegram_llm_bot.shared.messages import AIMessage, HumanMessage, SystemMessage
 
 settings = importlib.import_module(os.getenv("SETTINGS_FILE"))
 

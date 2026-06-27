@@ -4,7 +4,6 @@ import os
 import sys
 from pathlib import Path
 
-from langchain.schema import HumanMessage, SystemMessage
 from telegram import Update
 from telegram.ext import Application, CommandHandler
 
@@ -21,6 +20,7 @@ logging.config.fileConfig(LOGGING_CONFIG, disable_existing_loggers=False)
 logger = logging.getLogger(__name__)
 
 from telegram_llm_bot.shared.db.mongo import mongodb_manager
+from telegram_llm_bot.shared.messages import HumanMessage, SystemMessage
 from telegram_llm_bot.shared.handlers.basic import (
     handle_start,
     handle_user_id,
