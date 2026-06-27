@@ -14,7 +14,7 @@ from transformers.models.llama.tokenization_llama_fast import B_SYS, E_SYS
 
 HF_CACHE = "./models"
 MODEL_ID = "meta-llama/Llama-2-7b-chat-hf"
-APP_NAME = "travel-guru"
+APP_NAME = os.getenv("BEAM_APP_NAME", os.getenv("BOT_NAME", "telegram-llm-bot"))
 GPU = "T4"
 MEMORY = "16Gi"
 

@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import List, Sequence, Dict
 
 from langchain.schema import (
@@ -10,6 +11,43 @@ from pymongo import errors
 from telegram_llm_bot.shared.db.mongo import mongodb_manager
 
 logger = logging.getLogger(__name__)
+
+
+def get_chat_history(database_name: str, user_id: int, session_id: str = None):
+    if os.getenv("CHAT_HISTORY_BACKEND", "mongo").strip().lower() == "memory":
+        return InMemoryChatMessageHistory(database_name, user_id, session_id)
+    return MongoDBChatMessageHistory(database_name, user_id, session_id)
+
+
+class InMemoryChatMessageHistory(BaseChatMessageHistory):
+    histories = {}
+
+    def __init__(self, database_name: str, user_id: int, session_id: str = None):
+        self.key = (database_name, user_id, session_id)
+
+    @staticmethod
+    def _message_to_dict(message: BaseMessage) -> dict:
+        return {"type": message.type, "data": message.dict()}
+
+    def messages_to_dict(self, messages: Sequence[BaseMessage]) -> Dict[str, dict]:
+        return {
+            f"History.{m.additional_kwargs.get('timestamp')}": self._message_to_dict(m)
+            for m in messages
+        }
+
+    @property
+    async def messages(self):
+        yield self.key[2], self.histories.get(self.key, [])
+
+    async def add_messages(self, messages: List[BaseMessage]) -> None:
+        history = self.histories.setdefault(self.key, [])
+        history.extend(messages)
+
+    async def add_message(self, message: BaseMessage) -> None:
+        await self.add_messages([message])
+
+    async def clear(self) -> None:
+        self.histories.pop(self.key, None)
 
 
 class MongoDBChatMessageHistory(BaseChatMessageHistory):

@@ -1,23 +1,31 @@
-[tool.poetry]
+[project]
 name = "telegram-llm-bot"
-version = "0.1.0"
-description = ""
-authors = ["ma2za <mazzapaolo2019@gmail.com>"]
+version = "0.2.0"
+description = "Telegram AI bot starter with local Ollama and optional Beam support"
 readme = "README.md"
-packages = [{ include = "telegram_llm_bot", from = "src" }]
+requires-python = ">=3.9,<3.13"
+authors = [{ name = "ma2za", email = "mazzapaolo2019@gmail.com" }]
+dependencies = [
+    "python-telegram-bot>=20.5,<21.0",
+    "python-dotenv>=1.0.0,<2.0.0",
+    "httpx>=0.24.1,<0.25.0",
+    "motor>=3.3.1,<4.0.0",
+    "pyyaml>=6.0.1,<7.0.0",
+    "langchain>=0.0.292,<0.0.293",
+    "openai>=0.28.0,<0.29.0",
+    "async-lru>=2.0.4,<3.0.0",
+    "mmh3>=4.0.1,<5.0.0",
+    "pydantic-settings>=2.0.3,<3.0.0",
+    "weaviate-client>=3.24.1,<4.0.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-python-telegram-bot = "^20.5"
-python-dotenv = "^1.0.0"
-motor = "^3.3.1"
-pyyaml = "^6.0.1"
-langchain = "^0.0.292"
-openai = "^0.28.0"
-async-lru = "^2.0.4"
-mmh3 = "^4.0.1"
-pydantic-settings = "^2.0.3"
-weaviate-client = "^3.24.1"
+[project.scripts]
+telegram-llm-bot = "telegram_llm_bot.app:main"
+telegram-llm-bot-smoke = "telegram_llm_bot.app:smoke"
+telegram-llm-bot-provider-check = "telegram_llm_bot.app:provider_check"
+
+[tool.poetry]
+packages = [{ include = "telegram_llm_bot", from = "src" }]
 
 [build-system]
 requires = ["poetry-core"]

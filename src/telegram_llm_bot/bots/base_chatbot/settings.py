@@ -1,9 +1,14 @@
 import logging
+from pathlib import Path
 from typing import List, Dict, Any
 
 import yaml
 from pydantic_settings import BaseSettings
 from telegram.ext import MessageHandler, filters, BaseHandler
+
+from telegram_llm_bot.paths import BASE_CHATBOT_DIR, load_environment
+
+load_environment()
 
 from telegram_llm_bot.bots.base_chatbot.handlers.text import text_chat_handler
 
@@ -27,12 +32,12 @@ class Settings(BaseSettings):
     system_prompt: str = ""
     start_message: str = ""
 
-    def __init__(self, config_file: str, **values: Any):
+    def __init__(self, config_file: Path, **values: Any):
         super().__init__(**values)
         with open(config_file, "r") as f:
-            config = yaml.load(f, Loader=yaml.Loader)
-        Settings.system_prompt = config.get("system")
-        Settings.start_message = config.get("start")
+            config = yaml.safe_load(f)
+        self.system_prompt = config.get("system") or ""
+        self.start_message = config.get("start") or ""
 
 
-settings = Settings("bots/base_chatbot/config.yml")
+settings = Settings(BASE_CHATBOT_DIR / "config.yml")

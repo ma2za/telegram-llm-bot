@@ -5,8 +5,8 @@ from datetime import datetime
 
 from langchain.schema import AIMessage, SystemMessage, HumanMessage
 
-from telegram_llm_bot.shared.chat import beam_chat
-from telegram_llm_bot.shared.history.history import MongoDBChatMessageHistory
+from telegram_llm_bot.shared.chat import chat
+from telegram_llm_bot.shared.history.history import get_chat_history
 
 settings = importlib.import_module(os.getenv("SETTINGS_FILE"))
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 async def text_chat_service(user_id: int, text: str, msg_date: datetime):
     try:
-        chat_history = MongoDBChatMessageHistory(os.getenv("BOT_NAME"), user_id)
+        chat_history = get_chat_history(os.getenv("BOT_NAME"), user_id)
         # await chat_history.clear()
 
         messages = [msg async for k, v in chat_history.messages for msg in v]
@@ -39,13 +39,7 @@ async def text_chat_service(user_id: int, text: str, msg_date: datetime):
                 },
             )
         )
-        response = await beam_chat(
-            {
-                "messages": list(
-                    chat_history.messages_to_dict(messages + new_messages).values()
-                )
-            }
-        )
+        response = await chat(messages + new_messages)
         new_messages.append(
             AIMessage(
                 content=response,
@@ -57,7 +51,7 @@ async def text_chat_service(user_id: int, text: str, msg_date: datetime):
         )
         await chat_history.add_messages(new_messages)
 
-        reply_msg = response
+        reply_msg = response or "I could not generate a response."
     except Exception as ex:
         logger.error(ex)
         reply_msg = "😿"
