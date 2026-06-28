@@ -1,6 +1,6 @@
 [project]
 name = "telegram-llm-bot"
-version = "0.5.0"
+version = "0.7.0"
 description = "Telegram AI bot starter with local Ollama and optional Beam support"
 readme = "README.md"
 requires-python = ">=3.9,<4.0"

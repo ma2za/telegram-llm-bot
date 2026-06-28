@@ -37,4 +37,7 @@ COPY pyproject.toml poetry.lock README.md ./
 RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --no-root
 
 COPY src/telegram_llm_bot/ ./src/telegram_llm_bot/
+RUN mkdir -p /app/.tmp /app/src/telegram_llm_bot/logs
 WORKDIR /app/src/telegram_llm_bot/
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 CMD poetry run telegram-llm-bot-smoke

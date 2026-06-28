@@ -13,10 +13,13 @@ The default example uses `qwen2.5:0.5b` through Ollama. The model artifact is ab
 - Provider switch via env: `ollama`, `beam`, or `echo`.
 - Smoke checks that do not call Telegram or external APIs.
 - Config doctor for provider, history, and Telegram setup.
+- `/health` command for non-secret runtime status.
 - Local scaffold command that creates starter config files.
 - Optional live provider check for Ollama.
 - SQLite history for persistent Mongo-free local development.
-- `/help`, `/settings`, `/reset`, and `/model` commands for cleaner demos and debugging.
+- Named conversation sessions for separate topics.
+- `/help`, `/health`, `/settings`, `/session`, `/new`, `/reset`, and `/model` commands for cleaner demos and debugging.
+- Per-user session locking keeps concurrent Telegram replies ordered.
 - Mongo history still available for deployed bots.
 - Poetry package scripts for repeatable runs.
 
@@ -105,6 +108,24 @@ system: You are a helpful assistant. Answer clearly and concisely.
 
 The default `CHAT_HISTORY_BACKEND=sqlite` keeps local setup simple and persists chat history across restarts. Use Mongo when you want a deployed database backend, or `memory` for throwaway test runs.
 
+## Sessions
+
+Each Telegram user starts in the `default` session. Sessions keep separate chat history for topics like `work`, `ideas`, or `travel`.
+
+```text
+/session       show current session
+/new work      create or switch to work
+/sessions      list sessions
+/use work      switch to work
+/delete work   delete work
+/reset         clear the current session
+/reset_all     clear all your sessions
+```
+
+## Runtime Health
+
+Use `/health` in Telegram to see the active provider, model, history backend, session, and whether the SQLite history directory is writable. The output avoids tokens and credentialed URLs.
+
 ## Providers
 
 | Provider | Env value | Use case |
@@ -174,17 +195,25 @@ poetry run telegram-llm-bot
 ```text
 /help    show bot commands
 /my_id   show your Telegram user id
+/health show runtime health
 /model   show active provider, model, context, and history backend
-/reset   clear your chat history
+/new     create or switch to a session
+/session show current session
+/sessions list your sessions
+/use     switch to an existing session
+/delete  delete a session
+/reset   clear current session history
+/reset_all clear all your sessions
 /settings show active non-secret settings
 ```
 
 ## Docker
 
-The compose file runs only the bot service and uses SQLite by default. If Ollama runs on the host machine, use the Docker env example so the container can reach it:
+The compose file runs only the bot service, reads `.env` and `bot.env`, and uses SQLite by default. If Ollama runs on the host machine, use the Docker env example so the container can reach it:
 
 ```powershell
 Copy-Item .env.docker.example .env
+poetry run telegram-llm-bot-init --force
 docker compose up --build
 ```
 
@@ -194,6 +223,8 @@ The Docker default uses:
 OLLAMA_BASE_URL=http://host.docker.internal:11434
 CHAT_HISTORY_BACKEND=sqlite
 ```
+
+The image and Compose service use `telegram-llm-bot-smoke` as a health check.
 
 ## Development
 
@@ -209,6 +240,7 @@ poetry run ruff format --check .
 poetry run python -m compileall -q src tests
 poetry run python -m pip check
 poetry check
+docker compose config --quiet
 ```
 
 Build package artifacts:
@@ -247,4 +279,4 @@ tests/test_text_service.py                       Error message unit tests
 
 ## Version
 
-Current version: `0.5.0`.
+Current version: `0.7.0`.

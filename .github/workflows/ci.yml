@@ -47,6 +47,9 @@ jobs:
       - name: Run config doctor
         run: poetry run telegram-llm-bot-doctor
 
+      - name: Validate Docker Compose config
+        run: docker compose config --quiet
+
       - name: Run Ruff lint
         run: poetry run ruff check .
 

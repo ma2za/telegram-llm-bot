@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.0
+
+- Add per-user/session text handling locks to keep concurrent Telegram messages ordered.
+- Add `/health` for non-secret runtime status, active session, and SQLite writable checks.
+- Log non-secret startup configuration for provider, model, history backend, and bot config.
+- Update Docker Compose to use scaffolded `bot.env` and add smoke-based health checks.
+- Add CI validation for Docker Compose configuration.
+
+## 0.6.0
+
+- Add named conversation sessions with SQLite-backed active session state.
+- Add `/session`, `/new`, `/sessions`, `/use`, `/delete`, and `/reset_all` commands.
+- Make `/reset` clear only the current session.
+- Route text chat history through the user's active session.
+- Show the active session in `/settings`.
+
 ## 0.5.0
 
 - Add `telegram-llm-bot-init` to scaffold local `.env`, `bot.env`, and `bot.yml` files.

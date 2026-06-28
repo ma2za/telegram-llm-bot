@@ -28,10 +28,36 @@ from telegram_llm_bot.shared.handlers.basic import (
     handle_reset,
     handle_model,
     handle_help,
+    handle_health,
     handle_settings,
+    handle_session,
+    handle_new_session,
+    handle_sessions,
+    handle_use_session,
+    handle_delete_session,
+    handle_reset_all,
 )
 from telegram_llm_bot.shared.chat import chat
 from telegram_llm_bot.shared.chat import ollama_base_url, ollama_model, ollama_options
+
+
+def runtime_model_name(provider: str) -> str:
+    if provider == "ollama":
+        return ollama_model()
+    if provider == "beam":
+        return os.getenv("BEAM_APP_NAME", "beam")
+    if provider == "echo":
+        return "echo"
+    return "unknown"
+
+
+def log_startup_config() -> None:
+    provider = os.getenv("LLM_PROVIDER", "unknown").strip().lower()
+    logger.info("Bot name: %s", os.getenv("BOT_NAME", "unknown"))
+    logger.info("Provider: %s", provider)
+    logger.info("Model: %s", runtime_model_name(provider))
+    logger.info("History backend: %s", os.getenv("CHAT_HISTORY_BACKEND", "sqlite"))
+    logger.info("Bot config: %s", settings.settings.config_file)
 
 
 def build_application() -> Application:
@@ -48,7 +74,14 @@ def build_application() -> Application:
             CommandHandler("reset", handle_reset, block=False),
             CommandHandler("model", handle_model, block=False),
             CommandHandler("help", handle_help, block=False),
+            CommandHandler("health", handle_health, block=False),
             CommandHandler("settings", handle_settings, block=False),
+            CommandHandler("session", handle_session, block=False),
+            CommandHandler("new", handle_new_session, block=False),
+            CommandHandler("sessions", handle_sessions, block=False),
+            CommandHandler("use", handle_use_session, block=False),
+            CommandHandler("delete", handle_delete_session, block=False),
+            CommandHandler("reset_all", handle_reset_all, block=False),
         ]
         + settings.settings.handlers
     )
@@ -63,7 +96,14 @@ async def post_init(application: Application) -> None:
             ("reset", "clear your chat history"),
             ("model", "show active provider and history backend"),
             ("help", "show bot commands"),
+            ("health", "show runtime health"),
             ("settings", "show active non-secret settings"),
+            ("session", "show current session"),
+            ("new", "new session name"),
+            ("sessions", "list sessions"),
+            ("use", "use session name"),
+            ("delete", "delete session name"),
+            ("reset_all", "clear all your sessions"),
         ]
         + list(settings.settings.commands.items())
     )
@@ -84,7 +124,7 @@ def smoke() -> None:
         ollama_model()
         ollama_options()
     print(f"Loaded bot: {os.getenv('BOT_NAME')}")
-    print(f"Loaded handlers: {len(settings.settings.handlers) + 7}")
+    print(f"Loaded handlers: {len(settings.settings.handlers) + 14}")
     print(f"Loaded provider: {provider}")
     print(f"Loaded history: {backend}")
     print("Smoke run ok")
@@ -108,6 +148,7 @@ def provider_check() -> None:
 
 def main() -> None:
     Path(".tmp").mkdir(parents=True, exist_ok=True)
+    log_startup_config()
     app = build_application()
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 

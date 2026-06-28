@@ -7,7 +7,7 @@ services:
     container_name: base-chatbot
     env_file:
       - .env
-      - src/telegram_llm_bot/bots/base_chatbot/.env
+      - bot.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
@@ -18,3 +18,9 @@ services:
         source: .tmp
         target: /app/.tmp
     restart: "no"
+    healthcheck:
+      test: ["CMD", "poetry", "run", "telegram-llm-bot-smoke"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
