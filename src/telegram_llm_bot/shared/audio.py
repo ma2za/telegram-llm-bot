@@ -1,117 +1,69 @@
-import logging
-import os
+import asyncio
 import hashlib
-from datetime import date
+import os
+from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
 from async_lru import alru_cache
+from faster_whisper import WhisperModel
 
-from telegram_llm_bot.shared.chat import azure_openai_chat
-from telegram_llm_bot.shared.db.mongo import mongodb_manager
-from telegram_llm_bot.shared.messages import HumanMessage, SystemMessage
-
-logger = logging.getLogger(__name__)
+from telegram_llm_bot.paths import PROJECT_DIR
 
 
-async def check_voice_limit(user_id: int, duration: int):
-    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
-    collection = db[os.getenv("COLLECTION_NAME")]
-    result = await collection.find_one(
-        {"user_id": user_id},
-        {
-            f"limits.{date.today()}.daily_seconds": 1,
-            "daily_audio_limit": 1,
-        },
+def transcription_model() -> str:
+    return os.getenv("LOCAL_TRANSCRIPTION_MODEL", "small")
+
+
+def transcription_compute_type() -> str:
+    return os.getenv("LOCAL_TRANSCRIPTION_COMPUTE_TYPE", "int8")
+
+
+def transcription_device() -> str:
+    return os.getenv("LOCAL_TRANSCRIPTION_DEVICE", "cpu")
+
+
+def transcription_beam_size() -> int:
+    return int(os.getenv("LOCAL_TRANSCRIPTION_BEAM_SIZE", "5"))
+
+
+def transcription_cpu_threads() -> int:
+    return int(os.getenv("LOCAL_TRANSCRIPTION_CPU_THREADS", "4"))
+
+
+def temp_audio_path(voice: bytes) -> Path:
+    return PROJECT_DIR / ".tmp" / f"{hashlib.sha256(voice).hexdigest()}.oga"
+
+
+@lru_cache
+def local_transcription_model() -> WhisperModel:
+    return WhisperModel(
+        transcription_model(),
+        device=transcription_device(),
+        compute_type=transcription_compute_type(),
+        cpu_threads=transcription_cpu_threads(),
     )
-    if result is None:
-        result = {}
-    daily_seconds = result.get("limits", {}).get(f"{date.today()}", {}).get("daily_seconds", 0)
-    daily_audio_limit = result.get("daily_audio_limit", 300)
-    # TODO handle split audio
-    if daily_audio_limit - daily_seconds - duration < 0:
-        raise Exception
+
+
+def transcribe_file(path: Path, language: Optional[str] = None) -> str:
+    kwargs = {"beam_size": transcription_beam_size(), "vad_filter": True}
+    if language:
+        kwargs["language"] = language
+    segments, _ = local_transcription_model().transcribe(str(path), **kwargs)
+    return " ".join(segment.text.strip() for segment in segments).strip()
 
 
 @alru_cache
 async def transcribe(
-    voice: bytes, user_id: int, duration: int, language: Optional[str] = None
+    voice: bytes,
+    user_id: int = None,
+    duration: int = None,
+    language: Optional[str] = None,
 ) -> str:
-    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
-    collection = db[os.getenv("COLLECTION_NAME")]
-    file_name = f".tmp/{hashlib.sha256(voice).hexdigest()}.oga"
-    with open(file_name, "wb") as new_file:
-        new_file.write(voice)
-    trans_kwargs = {} if language is None else {"language": language}
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("Set OPENAI_API_KEY before using voice transcription")
-    import httpx
-
-    with open(file_name, "rb") as audio_file:
-        files = {"file": (file_name, audio_file, "audio/ogg")}
-        data = {"model": "whisper-1", **trans_kwargs}
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.openai.com/v1/audio/transcriptions",
-                headers={"Authorization": f"Bearer {api_key}"},
-                data=data,
-                files=files,
-                timeout=120,
-            )
-    response.raise_for_status()
-    result = response.json()
+    path = temp_audio_path(voice)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(voice)
     try:
-        os.remove(file_name)
-    except OSError as ex:
-        logger.error(ex)
-    await collection.update_one(
-        {"user_id": user_id},
-        {"$inc": {f"limits.{date.today()}.daily_seconds": duration}},
-        upsert=True,
-    )
-    return result.get("text").strip()
-
-
-async def transcribe_and_check(
-    downloaded_file: bytes,
-    user_id: int,
-    duration: int,
-):
-    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
-    collection = db[os.getenv("COLLECTION_NAME")]
-    # TODO set daily limit
-    transcript = None
-    try:
-        # TODO handle date.fromtimestamp(msg_date) everywhere
-        await check_voice_limit(user_id, duration)
-
-        result = await collection.find_one(
-            {"user_id": user_id},
-            {"language": 1},
-        )
-
-        if result is None:
-            result = {}
-
-        transcript = await transcribe(
-            bytes(downloaded_file),
-            user_id,
-            duration,
-            result.get("language"),
-        )
-
-        messages = [
-            SystemMessage(
-                content="""Please review and edit the following text generated by an ASR system.
-                    Ensure that the content, style, and language remain unchanged,
-                    but correct any errors to make it more readable and coherent.
-                    Do not add preambles to the edited paragraph or quotes surrounding your responses. Just give
-                    me the edited text."""
-            ),
-            HumanMessage(content=transcript),
-        ]
-
-        transcript = await azure_openai_chat(messages)
-    except Exception as ex:
-        logger.error(ex)
-    return transcript
+        return await asyncio.to_thread(transcribe_file, path, language)
+    finally:
+        path.unlink(missing_ok=True)

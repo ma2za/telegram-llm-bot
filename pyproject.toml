@@ -1,6 +1,6 @@
 [project]
 name = "telegram-llm-bot"
-version = "0.7.0"
+version = "0.8.0"
 description = "Telegram AI bot starter with local Ollama and optional Beam support"
 readme = "README.md"
 requires-python = ">=3.9,<4.0"
@@ -39,6 +39,8 @@ dependencies = [
     "motor>=3.6.0,<4.0.0",
     "pyyaml>=6.0.2,<7.0.0",
     "async-lru>=2.0.4,<3.0.0",
+    "aioboto3 (>=15.5.0,<16.0.0)",
+    "faster-whisper (>=1.2.1,<2.0.0)",
 ]
 
 [project.scripts]

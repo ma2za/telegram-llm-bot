@@ -1,90 +1,39 @@
-import itertools
+import hashlib
 import logging
 import os
+from datetime import datetime
 
-from telegram_llm_bot.shared.audio import transcribe_and_check
-from telegram_llm_bot.shared.chat import azure_openai_chat
-from telegram_llm_bot.shared.db.mongo import mongodb_manager
-from telegram_llm_bot.shared.history.history import MongoDBChatMessageHistory
-from telegram_llm_bot.shared.messages import AIMessage, HumanMessage, SystemMessage
+from telegram_llm_bot.bots.base_chatbot.services.text import text_chat_service, user_error_message
+from telegram_llm_bot.shared.audio import transcribe
+from telegram_llm_bot.shared.db.minio_storage import minio_storage
+from telegram_llm_bot.shared.history.history import get_active_session
 
 logger = logging.getLogger(__name__)
 
 
-async def new_note(audio: bytes, user_id: int, duration: int) -> str:
-    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
-    collection = db[os.getenv("COLLECTION_NAME")]
+def voice_object_name(user_id: int, session_id: str, audio: bytes) -> str:
+    digest = hashlib.sha256(audio).hexdigest()
+    return f"voice/{user_id}/{session_id}/{digest}.oga"
+
+
+async def voice_chat_service(
+    audio: bytes,
+    user_id: int,
+    duration: int,
+    msg_date: datetime,
+) -> str:
     try:
-        transcript = await transcribe_and_check(audio, user_id, duration)
-        query = HumanMessage(content=transcript)
-
-        result = await collection.find_one({"user_id": user_id}, {"current_session": 1})
-        session_name = "default" if result is None else result.get("current_session")
-        chat_history = MongoDBChatMessageHistory(os.getenv("BOT_NAME"), user_id, session_name)
-
-        messages = await chat_history.messages
-        new_messages = []
-        if not messages:
-            new_messages.append(
-                SystemMessage(
-                    content="""Let's have a brainstorming session to refine and explore an idea.
-            I'll start by describing the initial concept, and then we can go
-            back and forth to discuss and develop it. Feel free to ask
-            questions and provide suggestions as we go along. The idea has to start from me, so just wait until
-            I give you something that looks like an idea, ignore any other request."""
-                )
-            )
-        new_messages.append(query)
-        response = await azure_openai_chat(messages + new_messages)
-        new_messages.append(AIMessage(content=response))
-        await chat_history.add_messages(new_messages)
-
-        reply_msg = response
+        bot_name = os.getenv("BOT_NAME")
+        session_id = await get_active_session(bot_name, user_id)
+        object_name = voice_object_name(user_id, session_id, audio)
+        await minio_storage.put_object(object_name, audio, content_type="audio/ogg")
+        transcript = await transcribe(audio, user_id=user_id, duration=duration)
+        if not transcript:
+            return "I could not transcribe that voice message."
+        return await text_chat_service(user_id, transcript, msg_date)
     except Exception as ex:
-        logger.error(ex)
-        reply_msg = "😿"
-    return reply_msg
+        logger.exception(ex)
+        return user_error_message(ex)
 
 
-async def switch(user_id: int, session_name: str) -> str:
-    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
-    collection = db[os.getenv("COLLECTION_NAME")]
-
-    try:
-        await collection.update_one(
-            {"user_id": user_id},
-            {"$set": {"current_session": session_name}},
-            upsert=True,
-        )
-
-        reply_msg = f"Switched to note: {session_name}"
-    except Exception as ex:
-        logger.error(ex)
-        reply_msg = "😿"
-    return reply_msg
-
-
-async def summarize(user_id: int) -> str:
-    db = mongodb_manager.get_database(os.getenv("BOT_NAME"))
-    collection = db[os.getenv("COLLECTION_NAME")]
-
-    try:
-        result = await collection.find_one({"user_id": user_id}, {"current_session": 1})
-        session_name = "default" if result is None else result.get("current_session")
-        history = MongoDBChatMessageHistory(os.getenv("BOT_NAME"), user_id, session_name)
-
-        result = await history.messages
-        query = HumanMessage(
-            content="""Please summarize the notes that emerged from our brainstorming session
-            and propose a title that captures the essence of this conversation."""
-        )
-
-        response = await azure_openai_chat(
-            list(itertools.chain.from_iterable(dict(result).values())) + [query]
-        )
-
-        reply_msg = response
-    except Exception as ex:
-        logger.error(ex)
-        reply_msg = "😿"
-    return reply_msg
+new_note = voice_chat_service

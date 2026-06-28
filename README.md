@@ -4,13 +4,16 @@
 
 Ollama-first Python starter for building a Telegram AI chatbot that runs locally, works with low-RAM CPU machines, and can be extended to hosted inference later.
 
-The default example uses `qwen2.5:0.5b` through Ollama. The model artifact is about 398 MB, so it is practical for small local demos while still giving useful assistant behavior. Runtime memory depends on Ollama, platform, context length, and concurrent traffic; this template keeps the default context and output limits conservative.
+The default example uses `qwen3.5:0.8b` through Ollama for low local memory use with tool support. Voice messages are transcribed locally with `faster-whisper` using Whisper `small` on CPU `int8`, and raw voice audio is stored in MinIO through the S3-compatible async boto stack.
 
 ## Why Use This
 
 - Local-first Telegram AI bot with no paid LLM API required.
-- Low-RAM default model: `qwen2.5:0.5b`.
+- Low-RAM default model: `qwen3.5:0.8b`.
 - Provider switch via env: `ollama`, `beam`, or `echo`.
+- Ollama tool calling with built-in datetime and calculator tools.
+- Local voice-to-text with `faster-whisper`, no transcription API key required.
+- Voice object storage in MinIO via async boto-compatible S3 calls.
 - Smoke checks that do not call Telegram or external APIs.
 - Config doctor for provider, history, and Telegram setup.
 - `/health` command for non-secret runtime status.
@@ -30,7 +33,7 @@ Use Python 3.9 or newer.
 Install Ollama and pull the default model:
 
 ```powershell
-ollama pull qwen2.5:0.5b
+ollama pull qwen3.5:0.8b
 ```
 
 Install the app:
@@ -81,10 +84,22 @@ SQLITE_HISTORY_PATH=.tmp/chat_history.sqlite3
 
 LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen2.5:0.5b
+OLLAMA_MODEL=qwen3.5:0.8b
 OLLAMA_NUM_CTX=1024
 OLLAMA_NUM_PREDICT=256
 OLLAMA_TEMPERATURE=0.2
+OLLAMA_TOOLS_ENABLED=true
+
+LOCAL_TRANSCRIPTION_MODEL=small
+LOCAL_TRANSCRIPTION_COMPUTE_TYPE=int8
+LOCAL_TRANSCRIPTION_DEVICE=cpu
+LOCAL_TRANSCRIPTION_BEAM_SIZE=5
+LOCAL_TRANSCRIPTION_CPU_THREADS=4
+
+MINIO_ENDPOINT_URL=http://localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_BUCKET=telegram-llm-bot
 ```
 
 Bot env at `bot.env`:
@@ -130,7 +145,7 @@ Use `/health` in Telegram to see the active provider, model, history backend, se
 
 | Provider | Env value | Use case |
 | --- | --- | --- |
-| Ollama | `LLM_PROVIDER=ollama` | Default local bot with `qwen2.5:0.5b` |
+| Ollama | `LLM_PROVIDER=ollama` | Default local bot with `qwen3.5:0.8b` |
 | Echo | `LLM_PROVIDER=echo` | Fast smoke tests with no model/API calls |
 | Beam | `LLM_PROVIDER=beam` | Optional hosted/self-hosted inference path |
 
@@ -142,13 +157,39 @@ The Ollama provider calls:
 http://localhost:11434/api/chat
 ```
 
-Default low-RAM settings:
+Default low-RAM tool-capable settings:
 
 ```env
-OLLAMA_MODEL=qwen2.5:0.5b
+OLLAMA_MODEL=qwen3.5:0.8b
 OLLAMA_NUM_CTX=1024
 OLLAMA_NUM_PREDICT=256
 OLLAMA_TEMPERATURE=0.2
+OLLAMA_TOOLS_ENABLED=true
+```
+
+The built-in tool set includes current datetime lookup and safe arithmetic.
+
+## Voice and Object Storage
+
+Voice messages are downloaded from Telegram, stored in MinIO, transcribed locally, and then sent through the same session-aware chat flow as text messages.
+
+Local transcription defaults:
+
+```env
+LOCAL_TRANSCRIPTION_MODEL=small
+LOCAL_TRANSCRIPTION_COMPUTE_TYPE=int8
+LOCAL_TRANSCRIPTION_DEVICE=cpu
+LOCAL_TRANSCRIPTION_BEAM_SIZE=5
+LOCAL_TRANSCRIPTION_CPU_THREADS=4
+```
+
+MinIO defaults:
+
+```env
+MINIO_ENDPOINT_URL=http://localhost:9000
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin
+MINIO_BUCKET=telegram-llm-bot
 ```
 
 ### Beam
@@ -209,7 +250,7 @@ poetry run telegram-llm-bot
 
 ## Docker
 
-The compose file runs only the bot service, reads `.env` and `bot.env`, and uses SQLite by default. If Ollama runs on the host machine, use the Docker env example so the container can reach it:
+The compose file runs MinIO and the bot service, reads `.env` and `bot.env`, and uses SQLite by default. If Ollama runs on the host machine, use the Docker env example so the container can reach it:
 
 ```powershell
 Copy-Item .env.docker.example .env
@@ -222,6 +263,7 @@ The Docker default uses:
 ```env
 OLLAMA_BASE_URL=http://host.docker.internal:11434
 CHAT_HISTORY_BACKEND=sqlite
+MINIO_ENDPOINT_URL=http://minio:9000
 ```
 
 The image and Compose service use `telegram-llm-bot-smoke` as a health check.
@@ -260,7 +302,9 @@ uv venv --python 3.11 --seed
 
 ```text
 src/telegram_llm_bot/app.py                      Telegram entrypoint
-src/telegram_llm_bot/shared/chat.py              LLM provider dispatch
+src/telegram_llm_bot/shared/chat.py              LLM provider dispatch and tool calls
+src/telegram_llm_bot/shared/audio.py             Local faster-whisper transcription
+src/telegram_llm_bot/shared/db/minio_storage.py  Async S3-compatible MinIO storage
 src/telegram_llm_bot/shared/history/history.py   SQLite/Memory/Mongo chat history
 src/telegram_llm_bot/config.py                   Bot YAML config loading
 src/telegram_llm_bot/bots/base_chatbot/          Default bot configuration
@@ -279,4 +323,4 @@ tests/test_text_service.py                       Error message unit tests
 
 ## Version
 
-Current version: `0.7.0`.
+Current version: `0.8.0`.

@@ -5,10 +5,11 @@ from typing import List
 import httpx
 
 from telegram_llm_bot.shared.messages import BaseMessage
+from telegram_llm_bot.shared.tools import execute_tool_call, tool_schemas
 
 logger = logging.getLogger(__name__)
 
-OLLAMA_DEFAULT_MODEL = "qwen2.5:0.5b"
+OLLAMA_DEFAULT_MODEL = "qwen3.5:0.8b"
 
 
 def get_chat_provider():
@@ -51,14 +52,30 @@ def ollama_model() -> str:
 
 
 def ollama_payload(messages: List[BaseMessage]) -> dict:
-    return {
+    payload = {
         "model": ollama_model(),
         "messages": [
             {"role": ollama_role(message), "content": message.content} for message in messages
         ],
         "stream": False,
+        "think": ollama_think_enabled(),
         "options": ollama_options(),
     }
+    if ollama_tools_enabled():
+        payload["tools"] = tool_schemas()
+    return payload
+
+
+def ollama_tools_enabled() -> bool:
+    return os.getenv("OLLAMA_TOOLS_ENABLED", "true").strip().lower() not in {"0", "false", "no"}
+
+
+def ollama_think_enabled() -> bool:
+    return os.getenv("OLLAMA_THINK", "false").strip().lower() not in {"0", "false", "no"}
+
+
+def ollama_tool_max_rounds() -> int:
+    return int(os.getenv("OLLAMA_TOOL_MAX_ROUNDS", "2"))
 
 
 def ollama_role(message: BaseMessage) -> str:
@@ -73,11 +90,35 @@ def ollama_role(message: BaseMessage) -> str:
 
 async def ollama_chat(messages: List[BaseMessage]) -> str:
     base_url = ollama_base_url()
+    payload = ollama_payload(messages)
+    for _ in range(ollama_tool_max_rounds() + 1):
+        response = await ollama_chat_request(base_url, payload)
+        message = response.json().get("message", {})
+        tool_calls = message.get("tool_calls") or []
+        if not tool_calls:
+            content = message.get("content")
+            if not content:
+                raise RuntimeError("Ollama returned an empty response")
+            return content.strip()
+        payload["messages"].append(message)
+        for tool_call in tool_calls:
+            function_name = tool_call.get("function", {}).get("name")
+            payload["messages"].append(
+                {
+                    "role": "tool",
+                    "tool_name": function_name,
+                    "content": execute_tool_call(tool_call),
+                }
+            )
+    raise RuntimeError("Ollama tool call loop exceeded OLLAMA_TOOL_MAX_ROUNDS")
+
+
+async def ollama_chat_request(base_url: str, payload: dict):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{base_url}/api/chat",
-                json=ollama_payload(messages),
+                json=payload,
                 timeout=float(os.getenv("OLLAMA_TIMEOUT", "120")),
             )
     except httpx.ConnectError as ex:
@@ -91,10 +132,7 @@ async def ollama_chat(messages: List[BaseMessage]) -> str:
                 f"Ollama model not found: {ollama_model()}. Run: ollama pull {ollama_model()}"
             ) from ex
         raise RuntimeError(f"Ollama request failed: HTTP {response.status_code}") from ex
-    content = response.json().get("message", {}).get("content")
-    if not content:
-        raise RuntimeError("Ollama returned an empty response")
-    return content.strip()
+    return response
 
 
 async def beam_chat_messages(messages: List[BaseMessage]) -> str:

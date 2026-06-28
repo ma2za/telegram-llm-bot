@@ -37,7 +37,7 @@ class OllamaPayloadTest(unittest.TestCase):
         with patch.dict(
             os.environ,
             {
-                "OLLAMA_MODEL": "qwen2.5:0.5b",
+                "OLLAMA_MODEL": "qwen3.5:0.8b",
                 "OLLAMA_NUM_CTX": "1024",
                 "OLLAMA_NUM_PREDICT": "256",
                 "OLLAMA_TEMPERATURE": "0.2",
@@ -46,8 +46,10 @@ class OllamaPayloadTest(unittest.TestCase):
         ):
             payload = chat.ollama_payload(messages)
 
-        self.assertEqual(payload["model"], "qwen2.5:0.5b")
+        self.assertEqual(payload["model"], "qwen3.5:0.8b")
         self.assertFalse(payload["stream"])
+        self.assertFalse(payload["think"])
+        self.assertIn("tools", payload)
         self.assertEqual(payload["options"]["num_ctx"], 1024)
         self.assertEqual(payload["options"]["num_predict"], 256)
         self.assertEqual(payload["options"]["temperature"], 0.2)
@@ -59,6 +61,12 @@ class OllamaPayloadTest(unittest.TestCase):
                 {"role": "assistant", "content": "hi"},
             ],
         )
+
+    def test_omits_tools_when_disabled(self):
+        with patch.dict(os.environ, {"OLLAMA_TOOLS_ENABLED": "false"}, clear=False):
+            payload = chat.ollama_payload([HumanMessage(content="hello")])
+
+        self.assertNotIn("tools", payload)
 
 
 class OllamaChatTest(unittest.IsolatedAsyncioTestCase):
@@ -73,7 +81,7 @@ class OllamaChatTest(unittest.IsolatedAsyncioTestCase):
 
         with patch.dict(
             os.environ,
-            {"OLLAMA_BASE_URL": "http://localhost:11434", "OLLAMA_MODEL": "qwen2.5:0.5b"},
+            {"OLLAMA_BASE_URL": "http://localhost:11434", "OLLAMA_MODEL": "qwen3.5:0.8b"},
             clear=False,
         ):
             with patch("telegram_llm_bot.shared.chat.httpx.AsyncClient", return_value=client):
@@ -84,6 +92,38 @@ class OllamaChatTest(unittest.IsolatedAsyncioTestCase):
         url = client.post.await_args.kwargs.get("url") or client.post.await_args.args[0]
         self.assertEqual(url, "http://localhost:11434/api/chat")
         self.assertFalse(client.post.await_args.kwargs["json"]["stream"])
+
+    async def test_executes_tool_calls(self):
+        tool_response = Mock()
+        tool_response.json.return_value = {
+            "message": {
+                "role": "assistant",
+                "content": "",
+                "tool_calls": [
+                    {
+                        "function": {
+                            "name": "calculate",
+                            "arguments": {"expression": "2 + 3"},
+                        }
+                    }
+                ],
+            }
+        }
+        final_response = Mock()
+        final_response.json.return_value = {"message": {"content": "5"}}
+
+        with patch.dict(os.environ, {"OLLAMA_TOOL_MAX_ROUNDS": "1"}, clear=False):
+            with patch(
+                "telegram_llm_bot.shared.chat.ollama_chat_request",
+                new=AsyncMock(side_effect=[tool_response, final_response]),
+            ) as request:
+                result = await chat.ollama_chat([HumanMessage(content="what is 2+3?")])
+
+        self.assertEqual(result, "5")
+        second_payload = request.await_args_list[1].args[1]
+        self.assertEqual(second_payload["messages"][-1]["role"], "tool")
+        self.assertEqual(second_payload["messages"][-1]["tool_name"], "calculate")
+        self.assertEqual(second_payload["messages"][-1]["content"], "5")
 
 
 if __name__ == "__main__":

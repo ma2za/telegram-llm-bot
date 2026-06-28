@@ -24,10 +24,10 @@ class TextServiceErrorTest(unittest.TestCase):
         self.assertIn("Ollama is not running", text)
 
     def test_maps_missing_ollama_model(self):
-        text = user_error_message(RuntimeError("Ollama model not found: qwen2.5:0.5b"))
+        text = user_error_message(RuntimeError("Ollama model not found: qwen3.5:0.8b"))
 
         self.assertIn("Ollama model not found", text)
-        self.assertIn("qwen2.5:0.5b", text)
+        self.assertIn("qwen3.5:0.8b", text)
 
     def test_maps_sqlite_error(self):
         text = user_error_message(sqlite3.OperationalError("unable to open database file"))

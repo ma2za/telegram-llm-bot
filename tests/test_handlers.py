@@ -22,7 +22,7 @@ class ModelStatusTest(unittest.IsolatedAsyncioTestCase):
             os.environ,
             {
                 "LLM_PROVIDER": "ollama",
-                "OLLAMA_MODEL": "qwen2.5:0.5b",
+                "OLLAMA_MODEL": "qwen3.5:0.8b",
                 "OLLAMA_BASE_URL": "http://user:secret@localhost:11434",
                 "BEAM_TOKEN": "secret-token",
                 "CHAT_HISTORY_BACKEND": "sqlite",
@@ -32,7 +32,7 @@ class ModelStatusTest(unittest.IsolatedAsyncioTestCase):
             text = model_status_text()
 
         self.assertIn("Provider: ollama", text)
-        self.assertIn("Model: qwen2.5:0.5b", text)
+        self.assertIn("Model: qwen3.5:0.8b", text)
         self.assertIn("History: sqlite", text)
         self.assertIn("Context: 1024", text)
         self.assertNotIn("secret", text)
@@ -55,7 +55,7 @@ class ModelStatusTest(unittest.IsolatedAsyncioTestCase):
                 {
                     "BOT_NAME": "telegram-llm-bot",
                     "LLM_PROVIDER": "ollama",
-                    "OLLAMA_MODEL": "qwen2.5:0.5b",
+                    "OLLAMA_MODEL": "qwen3.5:0.8b",
                     "OLLAMA_BASE_URL": "http://user:secret@localhost:11434",
                     "TELEGRAM_BOT_TOKEN": "secret-token",
                     "CHAT_HISTORY_BACKEND": "sqlite",
@@ -78,7 +78,7 @@ class ModelStatusTest(unittest.IsolatedAsyncioTestCase):
                 {
                     "BOT_NAME": "telegram-llm-bot",
                     "LLM_PROVIDER": "ollama",
-                    "OLLAMA_MODEL": "qwen2.5:0.5b",
+                    "OLLAMA_MODEL": "qwen3.5:0.8b",
                     "OLLAMA_BASE_URL": "http://user:secret@localhost:11434",
                     "TELEGRAM_BOT_TOKEN": "secret-token",
                     "CHAT_HISTORY_BACKEND": "sqlite",
@@ -90,7 +90,7 @@ class ModelStatusTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertIn("Status: ok", text)
         self.assertIn("Provider: ollama", text)
-        self.assertIn("Model: qwen2.5:0.5b", text)
+        self.assertIn("Model: qwen3.5:0.8b", text)
         self.assertIn("History: sqlite", text)
         self.assertIn("Session: default", text)
         self.assertIn("SQLite path writable: yes", text)

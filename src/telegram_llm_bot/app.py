@@ -1,11 +1,14 @@
 import importlib
 import logging.config
 import os
+import socket
 import sys
 from pathlib import Path
 
+import httpx
 from telegram import Update
 from telegram.ext import Application, CommandHandler
+from telegram.request import HTTPXRequest
 
 from telegram_llm_bot.paths import LOGGING_CONFIG, LOG_DIR, PACKAGE_DIR, load_environment
 
@@ -18,6 +21,8 @@ os.chdir(PACKAGE_DIR)
 logging.config.fileConfig(LOGGING_CONFIG, disable_existing_loggers=False)
 
 logger = logging.getLogger(__name__)
+TELEGRAM_API_HOST = "api.telegram.org"
+TELEGRAM_API_URL = f"https://{TELEGRAM_API_HOST}"
 
 from telegram_llm_bot.shared.db.mongo import mongodb_manager
 from telegram_llm_bot.shared.messages import HumanMessage, SystemMessage
@@ -60,12 +65,59 @@ def log_startup_config() -> None:
     logger.info("Bot config: %s", settings.settings.config_file)
 
 
+def telegram_http_get(url: str, timeout: float, follow_redirects: bool):
+    transport = httpx.HTTPTransport(trust_env=False, local_address="0.0.0.0")
+    with httpx.Client(transport=transport, timeout=timeout, trust_env=False) as client:
+        return client.get(url, follow_redirects=follow_redirects)
+
+
+def telegram_httpx_kwargs(connection_pool_size: int) -> dict:
+    return {
+        "trust_env": False,
+        "transport": httpx.AsyncHTTPTransport(
+            trust_env=False,
+            local_address="0.0.0.0",
+            limits=httpx.Limits(
+                max_connections=connection_pool_size,
+                max_keepalive_connections=connection_pool_size,
+            ),
+        ),
+    }
+
+
+def check_telegram_api_reachable(resolve=socket.getaddrinfo, http_get=telegram_http_get) -> None:
+    try:
+        resolve(TELEGRAM_API_HOST, 443, type=socket.SOCK_STREAM)
+    except OSError as ex:
+        raise RuntimeError(
+            "Cannot resolve api.telegram.org. Check DNS, VPN, proxy, or network settings."
+        ) from ex
+
+    try:
+        response = http_get(TELEGRAM_API_URL, timeout=10.0, follow_redirects=False)
+    except httpx.HTTPError as ex:
+        raise RuntimeError(
+            "Cannot reach api.telegram.org over HTTPS. Check VPN, proxy, firewall, or network settings."
+        ) from ex
+
+    logger.info("Telegram API preflight ok: HTTPS status %s", response.status_code)
+
+
 def build_application() -> Application:
     token = os.getenv("TELEGRAM_BOT_TOKEN")
     if not token or token == "replace-me":
         raise ValueError("Set TELEGRAM_BOT_TOKEN in src/telegram_llm_bot/bots/base_chatbot/.env")
 
-    app = Application.builder().token(token).post_init(post_init).build()
+    request = HTTPXRequest(connection_pool_size=256, httpx_kwargs=telegram_httpx_kwargs(256))
+    get_updates_request = HTTPXRequest(httpx_kwargs=telegram_httpx_kwargs(1))
+    app = (
+        Application.builder()
+        .token(token)
+        .request(request)
+        .get_updates_request(get_updates_request)
+        .post_init(post_init)
+        .build()
+    )
     app.add_handlers(
         [
             CommandHandler("start", handle_start, block=False),
@@ -149,6 +201,7 @@ def provider_check() -> None:
 def main() -> None:
     Path(".tmp").mkdir(parents=True, exist_ok=True)
     log_startup_config()
+    check_telegram_api_reachable()
     app = build_application()
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 

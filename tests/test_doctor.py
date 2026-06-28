@@ -18,7 +18,7 @@ class DoctorTest(unittest.IsolatedAsyncioTestCase):
                     "SETTINGS_FILE": "telegram_llm_bot.bots.base_chatbot.settings",
                     "BOT_NAME": "telegram-llm-bot",
                     "LLM_PROVIDER": "ollama",
-                    "OLLAMA_MODEL": "qwen2.5:0.5b",
+                    "OLLAMA_MODEL": "qwen3.5:0.8b",
                     "OLLAMA_NUM_CTX": "1024",
                     "OLLAMA_NUM_PREDICT": "256",
                     "OLLAMA_TEMPERATURE": "0.2",

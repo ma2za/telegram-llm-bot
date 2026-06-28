@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.8.0
+
+- Switch the default local Ollama model to `qwen3.5:0.8b`.
+- Add Ollama tool calling with built-in datetime and safe arithmetic tools.
+- Add local voice-to-text handling with `faster-whisper`.
+- Add async MinIO/S3-compatible object storage for Telegram voice audio.
+- Add Docker Compose MinIO service and Docker env defaults.
+- Harden Telegram startup and polling HTTP clients for local VPN/proxy routing issues.
+- Add startup preflight checks for Telegram DNS and HTTPS reachability.
+- Add tests for Telegram startup, tool calls, transcription, and MinIO storage.
+
 ## 0.7.0
 
 - Add per-user/session text handling locks to keep concurrent Telegram messages ordered.

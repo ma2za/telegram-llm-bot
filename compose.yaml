@@ -1,4 +1,20 @@
 services:
+  minio:
+    image: quay.io/minio/minio:latest
+    command: server /data --console-address ":9001"
+    container_name: telegram-llm-bot-minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - type: bind
+        source: .tmp/minio
+        target: /data
+    restart: "no"
+
   base-chatbot:
     build:
       context: .
@@ -10,6 +26,8 @@ services:
       - bot.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      - minio
     volumes:
       - type: bind
         source: src/telegram_llm_bot/logs
