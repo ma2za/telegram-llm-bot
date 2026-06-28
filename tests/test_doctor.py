@@ -3,9 +3,10 @@ import io
 import os
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from telegram_llm_bot.doctor import doctor_async
+from telegram_llm_bot.shared.readiness import ReadinessResult
 
 
 class DoctorTest(unittest.IsolatedAsyncioTestCase):
@@ -51,6 +52,46 @@ class DoctorTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(code, 1)
 
+    async def test_doctor_live_warns_without_failing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.dict(
+                os.environ,
+                {
+                    "TELEGRAM_BOT_TOKEN": "123456:ci-dummy-token",
+                    "SETTINGS_FILE": "telegram_llm_bot.bots.base_chatbot.settings",
+                    "BOT_NAME": "telegram-llm-bot",
+                    "LLM_PROVIDER": "ollama",
+                    "OLLAMA_MODEL": "qwen3.5:0.8b",
+                    "OLLAMA_NUM_CTX": "1024",
+                    "OLLAMA_NUM_PREDICT": "256",
+                    "OLLAMA_TEMPERATURE": "0.2",
+                    "CHAT_HISTORY_BACKEND": "sqlite",
+                    "SQLITE_HISTORY_PATH": f"{directory}/history.sqlite3",
+                },
+                clear=False,
+            ):
+                with patch(
+                    "telegram_llm_bot.doctor.check_telegram_readiness",
+                    return_value=ReadinessResult("OK", "Telegram HTTPS: reachable"),
+                ):
+                    with patch(
+                        "telegram_llm_bot.doctor.check_ollama_readiness",
+                        new=AsyncMock(return_value=ReadinessResult("OK", "Ollama: reachable")),
+                    ):
+                        with patch(
+                            "telegram_llm_bot.doctor.check_minio_readiness",
+                            new=AsyncMock(
+                                return_value=ReadinessResult("WARN", "MinIO: unreachable")
+                            ),
+                        ):
+                            output = io.StringIO()
+                            with contextlib.redirect_stdout(output):
+                                code = await doctor_async(live=True)
+
+        self.assertEqual(code, 0)
+        self.assertIn("WARN: MinIO: unreachable", output.getvalue())
+        self.assertIn("OK: Telegram HTTPS: reachable", output.getvalue())
+
     async def test_doctor_fails_on_invalid_bot_config(self):
         with tempfile.TemporaryDirectory() as directory:
             config_path = os.path.join(directory, "bot.yml")
@@ -69,10 +110,12 @@ class DoctorTest(unittest.IsolatedAsyncioTestCase):
                 },
                 clear=False,
             ):
-                with contextlib.redirect_stdout(io.StringIO()):
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
                     code = await doctor_async(live=False)
 
         self.assertEqual(code, 1)
+        self.assertIn("FAIL:", output.getvalue())
 
     async def test_doctor_fails_on_empty_token(self):
         with tempfile.TemporaryDirectory() as directory:

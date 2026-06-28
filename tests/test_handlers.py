@@ -1,7 +1,7 @@
 import os
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 from telegram_llm_bot.shared.handlers.basic import (
     delete_session_text,
@@ -14,6 +14,7 @@ from telegram_llm_bot.shared.handlers.basic import (
     settings_text,
     use_session_text,
 )
+from telegram_llm_bot.shared.readiness import ReadinessResult
 
 
 class ModelStatusTest(unittest.IsolatedAsyncioTestCase):
@@ -86,14 +87,24 @@ class ModelStatusTest(unittest.IsolatedAsyncioTestCase):
                 },
                 clear=False,
             ):
-                text = await health_text(1)
+                with patch(
+                    "telegram_llm_bot.shared.handlers.basic.check_ollama_readiness",
+                    new=AsyncMock(return_value=ReadinessResult("OK", "Ollama: reachable")),
+                ):
+                    with patch(
+                        "telegram_llm_bot.shared.handlers.basic.check_minio_readiness",
+                        new=AsyncMock(return_value=ReadinessResult("WARN", "MinIO: unreachable")),
+                    ):
+                        text = await health_text(1)
 
         self.assertIn("Status: ok", text)
         self.assertIn("Provider: ollama", text)
         self.assertIn("Model: qwen3.5:0.8b", text)
         self.assertIn("History: sqlite", text)
         self.assertIn("Session: default", text)
-        self.assertIn("SQLite path writable: yes", text)
+        self.assertIn("OK: SQLite path writable: yes", text)
+        self.assertIn("OK: Ollama: reachable", text)
+        self.assertIn("WARN: MinIO: unreachable", text)
         self.assertNotIn("secret", text)
         self.assertNotIn("localhost", text)
 

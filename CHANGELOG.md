@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.9.0
+
+- Require Python 3.10 or newer because the default voice transcription stack depends on `onnxruntime` wheels that do not install reliably on Python 3.9.
+- Add shared readiness checks for SQLite, Ollama, MinIO, and Telegram.
+- Add an optional SearchApi-backed web search tool for Ollama tool calling.
+- Refresh README, package metadata, and GitHub repository topics for the 0.9 deployment stack.
+- Extend `telegram-llm-bot-doctor --live` with `OK`, `WARN`, and `FAIL` severity output.
+- Extend `/health` with sanitized Ollama and MinIO reachability status.
+- Make voice audio storage best-effort so transcription can continue when MinIO is down.
+- Add MinIO health checks and healthy-service dependency wiring to Docker Compose.
+- Keep `qwen3.5:0.8b` as the default local Ollama model.
+
 ## 0.8.0
 
 - Switch the default local Ollama model to `qwen3.5:0.8b`.

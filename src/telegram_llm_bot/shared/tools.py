@@ -1,8 +1,11 @@
 import ast
 import json
 import operator
+import os
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+import httpx
 
 OPERATORS = {
     ast.Add: operator.add,
@@ -60,6 +63,35 @@ def tool_schemas() -> list[dict]:
                 },
             },
         },
+        {
+            "type": "function",
+            "function": {
+                "name": "web_search",
+                "description": "Search the web with SearchApi Google results for current information",
+                "parameters": {
+                    "type": "object",
+                    "required": ["query"],
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Search query",
+                        },
+                        "max_results": {
+                            "type": "integer",
+                            "description": "Maximum result count to return, from 1 to 10",
+                        },
+                        "location": {
+                            "type": "string",
+                            "description": "Optional canonical search location",
+                        },
+                        "time_period": {
+                            "type": "string",
+                            "description": "Optional freshness filter such as last_day, last_week, or last_month",
+                        },
+                    },
+                },
+            },
+        },
     ]
 
 
@@ -106,6 +138,62 @@ def calculate(expression: str) -> str:
     return str(_eval_node(ast.parse(expression, mode="eval").body))
 
 
+def web_search(
+    query: str,
+    max_results: int = 5,
+    location: str = None,
+    time_period: str = None,
+) -> str:
+    api_key = os.getenv("SEARCHAPI_API_KEY")
+    if not api_key:
+        raise RuntimeError("Set SEARCHAPI_API_KEY before using web_search")
+
+    max_results = max(1, min(int(max_results or 5), 10))
+    params = {
+        "engine": "google",
+        "q": (query or "").strip(),
+        "safe": os.getenv("SEARCHAPI_SAFE", "active"),
+        "hl": os.getenv("SEARCHAPI_HL", "en"),
+        "gl": os.getenv("SEARCHAPI_GL", "us"),
+    }
+    if not params["q"]:
+        raise ValueError("Search query cannot be empty")
+    if location:
+        params["location"] = location
+    if time_period:
+        params["time_period"] = time_period
+
+    response = httpx.get(
+        os.getenv("SEARCHAPI_URL", "https://www.searchapi.io/api/v1/search"),
+        params=params,
+        headers={"Authorization": f"Bearer {api_key}"},
+        timeout=float(os.getenv("SEARCHAPI_TIMEOUT", "20")),
+    )
+    response.raise_for_status()
+    return format_searchapi_results(response.json(), max_results=max_results)
+
+
+def format_searchapi_results(data: dict, max_results: int = 5) -> str:
+    results = data.get("organic_results") or []
+    lines = []
+    for result in results[:max_results]:
+        title = result.get("title") or "Untitled"
+        link = result.get("link") or ""
+        snippet = result.get("snippet") or ""
+        source = result.get("source") or result.get("domain") or ""
+        parts = [title]
+        if source:
+            parts.append(f"Source: {source}")
+        if link:
+            parts.append(f"URL: {link}")
+        if snippet:
+            parts.append(f"Snippet: {snippet}")
+        lines.append("\n".join(parts))
+    if not lines:
+        return "No search results found."
+    return "\n\n".join(lines)
+
+
 def normalize_expression(expression: str) -> str:
     value = (expression or "").strip()
     if "=" in value:
@@ -136,6 +224,8 @@ def execute_tool_call(tool_call: dict) -> str:
             return get_current_datetime(**arguments)
         if name == "calculate":
             return calculate(**arguments)
+        if name == "web_search":
+            return web_search(**arguments)
     except Exception as ex:
         return f"Tool error from {name}: {ex}"
     return f"Unknown tool: {name}"

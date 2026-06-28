@@ -1,14 +1,11 @@
 import importlib
 import logging
 import os
-import tempfile
-from pathlib import Path
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
 from telegram_llm_bot.config import bot_config_path
-from telegram_llm_bot.paths import PROJECT_DIR
 from telegram_llm_bot.shared.chat import OLLAMA_DEFAULT_MODEL, ollama_options
 from telegram_llm_bot.shared.history.history import (
     DEFAULT_SESSION_ID,
@@ -18,6 +15,11 @@ from telegram_llm_bot.shared.history.history import (
     get_chat_history,
     list_sessions,
     set_active_session,
+)
+from telegram_llm_bot.shared.readiness import (
+    check_minio_readiness,
+    check_ollama_readiness,
+    check_sqlite_readiness,
 )
 from telegram_llm_bot.shared.services.basic import set_language
 from telegram_llm_bot.shared.utils import async_typing
@@ -63,20 +65,6 @@ def model_status_text() -> str:
     return "\n".join(lines)
 
 
-def sqlite_health_text() -> str:
-    configured = os.getenv("SQLITE_HISTORY_PATH", ".tmp/chat_history.sqlite3")
-    path = Path(configured)
-    path = path if path.is_absolute() else PROJECT_DIR / path
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with tempfile.NamedTemporaryFile(dir=path.parent, delete=True):
-            pass
-        writable = "yes"
-    except OSError:
-        writable = "no"
-    return f"SQLite path writable: {writable}"
-
-
 async def health_text(user_id: int = None) -> str:
     lines = [
         "Status: ok",
@@ -86,7 +74,12 @@ async def health_text(user_id: int = None) -> str:
     if user_id is not None:
         lines.append(f"Session: {await get_active_session(bot_name(), user_id)}")
     if os.getenv("CHAT_HISTORY_BACKEND", "sqlite").strip().lower() == "sqlite":
-        lines.append(sqlite_health_text())
+        sqlite = check_sqlite_readiness()
+        lines.append(f"{sqlite.severity}: {sqlite.message}")
+    ollama = await check_ollama_readiness()
+    minio = await check_minio_readiness()
+    lines.append(f"{ollama.severity}: {ollama.message}")
+    lines.append(f"{minio.severity}: {minio.message}")
     return "\n".join(lines)
 
 

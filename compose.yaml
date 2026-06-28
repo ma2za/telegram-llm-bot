@@ -14,6 +14,12 @@ services:
         source: .tmp/minio
         target: /data
     restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
 
   base-chatbot:
     build:
@@ -27,7 +33,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     volumes:
       - type: bind
         source: src/telegram_llm_bot/logs

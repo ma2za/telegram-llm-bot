@@ -1,9 +1,9 @@
 [project]
 name = "telegram-llm-bot"
-version = "0.8.0"
-description = "Telegram AI bot starter with local Ollama and optional Beam support"
+version = "0.9.0"
+description = "Local-first Telegram AI bot with Ollama tool calling, voice transcription, MinIO storage, SearchApi web search, and readiness checks"
 readme = "README.md"
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 authors = [{ name = "ma2za", email = "mazzapaolo2019@gmail.com" }]
 license = "MIT"
 keywords = [
@@ -12,8 +12,17 @@ keywords = [
     "llm",
     "ollama",
     "local-llm",
+    "local-ai",
     "chatbot",
     "python-telegram-bot",
+    "tool-calling",
+    "voice-to-text",
+    "faster-whisper",
+    "minio",
+    "s3",
+    "searchapi",
+    "sqlite",
+    "docker-compose",
     "qwen",
     "self-hosted",
 ]
@@ -22,7 +31,6 @@ classifiers = [
     "Environment :: Console",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

@@ -2,7 +2,10 @@ import os
 import unittest
 from unittest.mock import AsyncMock, patch
 
+from botocore.exceptions import EndpointConnectionError
+
 from telegram_llm_bot.shared.db.minio_storage import MinioStorage
+from telegram_llm_bot.shared.readiness import FAIL, OK, WARN, check_minio_readiness
 
 
 class ClientContext:
@@ -59,6 +62,55 @@ class MinioStorageTest(unittest.IsolatedAsyncioTestCase):
         with patch.dict(os.environ, {"BOT_NAME": "bot"}, clear=True):
             with self.assertRaisesRegex(RuntimeError, "MINIO_ENDPOINT_URL"):
                 await storage.put_object("x", b"abc")
+
+    async def test_minio_readiness_passes_when_configured_and_reachable(self):
+        client = AsyncMock()
+        storage = MinioStorage(session=Session(client))
+
+        with patch.dict(
+            os.environ,
+            {
+                "MINIO_ENDPOINT_URL": "http://localhost:9000",
+                "MINIO_ACCESS_KEY": "access",
+                "MINIO_SECRET_KEY": "secret",
+                "MINIO_BUCKET": "bucket",
+            },
+            clear=False,
+        ):
+            result = await check_minio_readiness(storage)
+
+        self.assertEqual(result.severity, OK)
+        self.assertEqual(result.message, "MinIO: reachable for bucket bucket")
+        client.list_buckets.assert_awaited_once()
+
+    async def test_minio_readiness_fails_when_env_is_missing(self):
+        storage = MinioStorage()
+
+        with patch.dict(os.environ, {"BOT_NAME": "bot"}, clear=True):
+            result = await check_minio_readiness(storage)
+
+        self.assertEqual(result.severity, FAIL)
+        self.assertIn("MINIO_ENDPOINT_URL", result.message)
+
+    async def test_minio_readiness_warns_when_endpoint_is_unreachable(self):
+        client = AsyncMock()
+        client.list_buckets.side_effect = EndpointConnectionError(endpoint_url="http://x")
+        storage = MinioStorage(session=Session(client))
+
+        with patch.dict(
+            os.environ,
+            {
+                "MINIO_ENDPOINT_URL": "http://localhost:9000",
+                "MINIO_ACCESS_KEY": "access",
+                "MINIO_SECRET_KEY": "secret",
+                "MINIO_BUCKET": "bucket",
+            },
+            clear=False,
+        ):
+            result = await check_minio_readiness(storage)
+
+        self.assertEqual(result.severity, WARN)
+        self.assertEqual(result.message, "MinIO: unreachable for bucket bucket")
 
 
 if __name__ == "__main__":
