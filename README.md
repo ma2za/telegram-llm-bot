@@ -97,7 +97,14 @@ Do not commit `bot.env`.
 
 ```yaml
 start: Hello. Send me a message and I will reply.
-system: You are a helpful assistant. Answer clearly and concisely.
+system: |
+  You are a concise, practical assistant in a Telegram chat.
+  Answer the user's latest message directly first.
+  Use short paragraphs or bullets when they make the answer easier to scan.
+  Ask one clarifying question only when a correct answer depends on missing information.
+  Say when you are uncertain instead of inventing facts.
+  Use available tools for arithmetic, dates, times, and current information.
+  Keep replies compact unless the user asks for detail.
 ```
 
 ### LLM
@@ -153,6 +160,7 @@ SQLite is the default chat history backend:
 ```env
 CHAT_HISTORY_BACKEND=sqlite
 SQLITE_HISTORY_PATH=.tmp/chat_history.sqlite3
+CHAT_HISTORY_MAX_MESSAGES=20
 ```
 
 MinIO is used for voice audio archive:
@@ -199,6 +207,7 @@ poetry run telegram-llm-bot-smoke
 poetry run telegram-llm-bot-doctor
 poetry run telegram-llm-bot-doctor --live
 poetry run telegram-llm-bot-provider-check
+poetry run telegram-llm-bot-eval --mock
 ```
 
 `telegram-llm-bot-smoke` validates local config without external service calls.
@@ -214,6 +223,9 @@ FAIL: required dependency blocks startup
 ```
 
 `telegram-llm-bot-provider-check` sends one small prompt to the configured provider.
+
+`telegram-llm-bot-eval --mock` runs deterministic assistant-behavior fixtures without a live
+model. Run `telegram-llm-bot-eval` without `--mock` to test the configured provider locally.
 
 `/health` reports provider/model status, history backend, active session, SQLite writability, Ollama reachability, and MinIO reachability. It does not print tokens, credentialed URLs, or raw secrets.
 
@@ -252,10 +264,17 @@ Run the test suite:
 poetry run python -m unittest
 ```
 
+If using the in-project venv directly on Windows:
+
+```powershell
+.\.venv\Scripts\python.exe -m unittest discover
+```
+
 Run the release gate:
 
 ```powershell
 poetry run python -m unittest
+poetry run telegram-llm-bot-eval --mock
 poetry run telegram-llm-bot-smoke
 poetry run telegram-llm-bot-doctor
 poetry run telegram-llm-bot-doctor --live
@@ -295,4 +314,4 @@ tests/                                           Unit tests
 
 ## Version
 
-Current version: `0.9.0`.
+Current version: `0.9.1`.

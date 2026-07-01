@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.1
+
+- Add `telegram-llm-bot-eval` for deterministic assistant behavior checks and optional live provider evaluation.
+- Add fixed assistant eval fixtures for concise answers, clarification, tool-oriented questions, hallucination traps, and memory.
+- Strengthen the default system prompt for concise, direct Telegram chat behavior.
+- Limit provider chat history with `CHAT_HISTORY_MAX_MESSAGES` to keep prompts inside the local model context.
+- Store a clear fallback reply when the model returns an empty response.
+
 ## 0.9.0
 
 - Require Python 3.10 or newer because the default voice transcription stack depends on `onnxruntime` wheels that do not install reliably on Python 3.9.
