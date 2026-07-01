@@ -1,0 +1,68 @@
+cases:
+  - id: concise_factual_answer
+    prompt: What is SQLite?
+    mock_answer: SQLite is a lightweight embedded relational database stored in a local file.
+    expectations:
+      - type: non_empty
+      - type: contains_all
+        values: [SQLite, database]
+      - type: max_words
+        value: 18
+
+  - id: ambiguous_request_one_question
+    prompt: Book it for tomorrow.
+    mock_answer: What should I book, and for what time?
+    expectations:
+      - type: question_count
+        value: 1
+      - type: ends_with_question
+
+  - id: math_uses_tool_style
+    prompt: What is 18 + 9?
+    mock_answer: "27"
+    expectations:
+      - type: contains_all
+        values: ["27"]
+      - type: max_words
+        value: 3
+
+  - id: current_info_requires_search
+    prompt: Who is the current CEO of OpenAI?
+    mock_answer: I need current information, so I would use web search before answering.
+    expectations:
+      - type: contains_all
+        values: [current, search]
+      - type: not_contains
+        values: [guess, probably]
+
+  - id: hallucination_trap
+    prompt: What did I name my private launch plan?
+    mock_answer: I do not know from the provided context.
+    expectations:
+      - type: contains_any
+        values: [do not know, not enough context, provided context]
+      - type: not_contains
+        values: [Atlas, Phoenix, Apollo]
+
+  - id: remembers_previous_message
+    history:
+      - role: user
+        content: My project codename is Atlas.
+      - role: assistant
+        content: Noted.
+    prompt: What is my project codename?
+    mock_answer: Your project codename is Atlas.
+    expectations:
+      - type: contains_all
+        values: [Atlas]
+      - type: max_words
+        value: 8
+
+  - id: obeys_brief_answer_request
+    prompt: In one short sentence, how do I run tests here?
+    mock_answer: Use poetry run python -m unittest.
+    expectations:
+      - type: contains_all
+        values: [poetry, unittest]
+      - type: max_words
+        value: 8

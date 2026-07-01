@@ -121,6 +121,10 @@ class OllamaChatTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(result, "5")
         second_payload = request.await_args_list[1].args[1]
+        self.assertEqual(second_payload["messages"][-2]["role"], "assistant")
+        self.assertEqual(
+            second_payload["messages"][-2]["tool_calls"][0]["function"]["name"], "calculate"
+        )
         self.assertEqual(second_payload["messages"][-1]["role"], "tool")
         self.assertEqual(second_payload["messages"][-1]["tool_name"], "calculate")
         self.assertEqual(second_payload["messages"][-1]["content"], "5")

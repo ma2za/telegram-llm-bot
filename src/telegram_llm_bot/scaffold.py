@@ -5,6 +5,7 @@ ROOT_ENV = """MONGO_HOST=localhost
 MONGO_PORT=27017
 CHAT_HISTORY_BACKEND=sqlite
 SQLITE_HISTORY_PATH=.tmp/chat_history.sqlite3
+CHAT_HISTORY_MAX_MESSAGES=20
 
 LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
@@ -46,7 +47,14 @@ BEAM_APP_NAME=telegram-llm-bot
 """
 
 BOT_CONFIG = """start: Hello. Send me a message and I will reply.
-system: You are a helpful assistant. Answer clearly and concisely.
+system: |
+  You are a concise, practical assistant in a Telegram chat.
+  Answer the user's latest message directly first.
+  Use short paragraphs or bullets when they make the answer easier to scan.
+  Ask one clarifying question only when a correct answer depends on missing information.
+  Say when you are uncertain instead of inventing facts.
+  Use available tools for arithmetic, dates, times, and current information.
+  Keep replies compact unless the user asks for detail.
 """
 
 
